@@ -79,7 +79,18 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -------------------- HEADER --------------------
-st.markdown("<h1> 🌎 AI TRIP PLANNER ✈️</h1>", unsafe_allow_html=True)
+st.markdown("""
+<h1 style='text-align:center; font-weight:800; font-size:3rem;'>
+<span>🌎</span> 
+<span style="background: linear-gradient(90deg, #6a0dad, #8a2be2, #b57edc);
+-webkit-background-clip: text; -webkit-text-fill-color: transparent;
+text-shadow: 0 0 25px rgba(140, 60, 200, 0.6);">
+AI TRIP PLANNER
+</span>
+<span>✈️</span>
+</h1>
+""", unsafe_allow_html=True)
+
 st.markdown("<p style='text-align:center;'>Your Smart, Budget-Friendly Travel Companion 💜</p>", unsafe_allow_html=True)
 
 # -------------------- API CONFIG --------------------
@@ -123,7 +134,18 @@ def chunked_generate(prompt_text, model_name="gemini-2.5-flash", chunk_size=1500
     return "\n".join(results)
 
 # -------------------- INPUT SECTION --------------------
-st.markdown('<div class="section-box"><h2 class="blink-heading">📝 Plan Your Trip</h2>', unsafe_allow_html=True)
+st.markdown("""
+<div class='section-box'>
+<h2 style="text-align:center; font-weight:700;">
+<span>📝</span> 
+<span style="background: linear-gradient(90deg, #7a1fa2, #9c4dcc, #c77dff);
+-webkit-background-clip: text; -webkit-text-fill-color: transparent;
+text-shadow: 0 0 20px rgba(155, 89, 182, 0.7);">
+Plan Your Trip
+</span>
+</h2>
+""", unsafe_allow_html=True)
+
 country = st.text_input("🌍 Country", value="India")
 city = st.text_input("🏙️ City", value="Goa")
 days = st.number_input("🗓️ Number of Days", min_value=1, max_value=15, value=5)
@@ -154,23 +176,19 @@ if st.button("🌸 Generate My AI Travel Plan"):
 
         # -------------------- SPLIT RESULT INTO SECTIONS --------------------
         sections = result.split("\n\n")
-        trip_summary = ""
-        itinerary = ""
-        hotels = ""
-        restaurants = ""
-        tips = ""
+        trip_summary, itinerary, hotels, restaurants, tips = "", "", "", "", ""
 
         for sec in sections:
             s = sec.lower()
-            if "summary" in s:
+            if "summary" in s or "overview" in s:
                 trip_summary += sec + "\n\n"
-            elif "day" in s:
+            elif "day" in s or "itinerary" in s:
                 itinerary += sec + "\n\n"
-            elif "hotel" in s:
+            elif "hotel" in s or "stay" in s:
                 hotels += sec + "\n\n"
-            elif "restaurant" in s:
+            elif "restaurant" in s or "food" in s:
                 restaurants += sec + "\n\n"
-            elif "tip" in s:
+            elif "tip" in s or "advice" in s or "recommendation" in s:
                 tips += sec + "\n\n"
 
         # -------------------- COMPLETE TRIP PLAN --------------------
@@ -180,7 +198,7 @@ if st.button("🌸 Generate My AI Travel Plan"):
 
         # -------------------- HOTEL RECOMMENDATIONS --------------------
         st.markdown('<div class="section-box"><h3 class="blink-heading">🏨 Hotel Recommendations</h3>', unsafe_allow_html=True)
-        if hotels:
+        if hotels.strip():
             st.markdown(hotels, unsafe_allow_html=True)
         else:
             st.info("No specific hotel recommendations found.")
@@ -188,7 +206,7 @@ if st.button("🌸 Generate My AI Travel Plan"):
 
         # -------------------- RESTAURANT RECOMMENDATIONS --------------------
         st.markdown('<div class="section-box"><h3 class="blink-heading">🍽️ Restaurant Suggestions</h3>', unsafe_allow_html=True)
-        if restaurants:
+        if restaurants.strip():
             st.markdown(restaurants, unsafe_allow_html=True)
         else:
             st.info("No specific restaurant suggestions found.")
@@ -196,10 +214,26 @@ if st.button("🌸 Generate My AI Travel Plan"):
 
         # -------------------- TRAVEL TIPS --------------------
         st.markdown('<div class="section-box"><h3 class="blink-heading">💡 Travel Tips</h3>', unsafe_allow_html=True)
-        if tips:
-            st.markdown(tips, unsafe_allow_html=True)
+        if tips.strip():
+            st.markdown(f"<div style='color:#4B0082; font-size:16px;'>{tips}</div>", unsafe_allow_html=True)
         else:
-            st.info("No travel tips were generated.")
+            st.warning("AI didn't generate travel tips — showing expert tips instead 🌸")
+
+            default_tips = """
+            <ul style='color:#4B0082; font-size:16px; line-height:1.8;'>
+                <li>🌍 Always keep a digital and printed copy of your passport, ID, and travel insurance.</li>
+                <li>💰 Carry some local currency for small purchases where cards may not work.</li>
+                <li>🕐 Plan your travel times early to avoid rush hours and long queues.</li>
+                <li>📱 Keep your phone charged and download offline maps before you go.</li>
+                <li>🥤 Stay hydrated and take small breaks, especially when exploring cities on foot.</li>
+                <li>🔌 Carry a universal travel adapter for your electronic devices.</li>
+                <li>🧳 Travel light — pack only what you’ll actually need.</li>
+                <li>😷 Respect local customs, dress codes, and COVID safety rules if still applicable.</li>
+                <li>🚖 Use trusted transportation options (official taxis or rideshare apps).</li>
+                <li>📸 Capture memories, but don’t forget to live in the moment too 💜</li>
+            </ul>
+            """
+            st.markdown(default_tips, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
         # -------------------- MAP VIEW --------------------
@@ -229,13 +263,7 @@ if st.button("🌸 Generate My AI Travel Plan"):
         )
 
         view_state = pdk.ViewState(latitude=lat, longitude=lon, zoom=zoom_level, pitch=0)
-
-        st.pydeck_chart(pdk.Deck(
-            map_style="light",
-            initial_view_state=view_state,
-            layers=[glow_layer, layer],
-            tooltip={"text": f"{city}, {country}"}
-        ))
+        st.pydeck_chart(pdk.Deck(map_style="light", initial_view_state=view_state, layers=[glow_layer, layer], tooltip={"text": f"{city}, {country}"}))
         st.markdown('</div>', unsafe_allow_html=True)
 
         # -------------------- PDF DOWNLOAD --------------------
@@ -249,7 +277,9 @@ if st.button("🌸 Generate My AI Travel Plan"):
         )
         st.markdown('</div>', unsafe_allow_html=True)
 
+
 # -------------------- FOOTER --------------------
 st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown("<center>💜 AI Journey | ✈️</center>", unsafe_allow_html=True)
+
 
