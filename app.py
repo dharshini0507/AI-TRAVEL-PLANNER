@@ -75,7 +75,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 # -------------------- HEADER --------------------
-st.markdown("<h1>✨ AI JOURNEY ✈️</h1>", unsafe_allow_html=True)
+st.markdown("<h1> 🌎 AI TRIP PLANNER ✈️</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align:center;'>Your Smart, Budget-Friendly Travel Companion 💜</p>", unsafe_allow_html=True)
 
 # -------------------- API CONFIG --------------------
@@ -229,7 +229,7 @@ def chunked_generate(prompt_text, model_name="gemini-2.5-flash", chunk_size=1500
     return "\n".join(results)
 
 # -------------------- INPUT SECTION --------------------
-st.markdown('<div class="section-box"><h2>📝 Plan Your Trip</h2>', unsafe_allow_html=True)
+st.markdown('<div class="section-box"><h2 class="blink-heading">📝 Plan Your Trip</h2>', unsafe_allow_html=True)
 country = st.text_input("🌍 Country", value="India")
 city = st.text_input("🏙️ City", value="Goa")
 days = st.number_input("🗓️ Number of Days", min_value=1, max_value=15, value=5)
@@ -258,44 +258,75 @@ if st.button("🌸 Generate My AI Travel Plan"):
 
         st.success(f"✅ Your AI Travel Plan for {city}, {country} is Ready!")
 
-        # Display plan
-        st.markdown('<div class="section-box"><h3>🗺️ Complete Trip Plan</h3>', unsafe_allow_html=True)
-        st.write(result)
+        # -------------------- COMPLETE TRIP PLAN --------------------
+        st.markdown('<div class="section-box"><h3 class="blink-heading">🗺️ Complete Trip Plan</h3>', unsafe_allow_html=True)
+        st.markdown(result, unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # -------------------- HOTEL RECOMMENDATIONS --------------------
+        st.markdown('<div class="section-box"><h3 class="blink-heading">🏨 Hotel Recommendations</h3>', unsafe_allow_html=True)
+        # (You can later display your hotel list here if you have it dynamically)
+        st.markdown("Here are some top-rated hotels near your destination 🌟", unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # -------------------- RESTAURANT RECOMMENDATIONS --------------------
+        st.markdown('<div class="section-box"><h3 class="blink-heading">🍽️ Restaurant Suggestions</h3>', unsafe_allow_html=True)
+        st.markdown("Here are some great places to try local cuisine 😋", unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
         # -------------------- MAP VIEW --------------------
-        st.markdown('<div class="section-box"><h3>📍 City Map View</h3>', unsafe_allow_html=True)
+        st.markdown('<div class="section-box"><h3 class="blink-heading">📍 City Map View</h3>', unsafe_allow_html=True)
+
         if city in city_coords:
             lat, lon = city_coords[city]
+            zoom_level = 8  # focused city view
         else:
-            st.warning(f"⚠️ No exact coordinates found for {city}. Showing India map.")
-            lat, lon = (20.5937, 78.9629)
+            st.warning(f"⚠️ No exact coordinates found for {city}. Showing World Map.")
+            lat, lon = (0, 0)
+            zoom_level = 1  # world view
 
         layer = pdk.Layer(
             "ScatterplotLayer",
             data=[{"lat": lat, "lon": lon}],
             get_position='[lon, lat]',
-            get_color='[240, 60, 0, 200]',
-            get_radius=6000,
+            get_color='[160, 32, 240, 230]',  # dark purple marker
+            get_radius=40000,
         )
 
+        # Add glowing circle layer for emphasis
+        glow_layer = pdk.Layer(
+            "ScatterplotLayer",
+            data=[{"lat": lat, "lon": lon}],
+            get_position='[lon, lat]',
+            get_color='[210, 150, 255, 120]',
+            get_radius=90000,
+        )
+
+        view_state = pdk.ViewState(latitude=lat, longitude=lon, zoom=zoom_level, pitch=0)
+
         st.pydeck_chart(pdk.Deck(
-            map_style='mapbox://styles/mapbox/pastel-day-v11',
-            initial_view_state=pdk.ViewState(latitude=lat, longitude=lon, zoom=8, pitch=30),
-            layers=[layer],
+            map_style="light",
+            initial_view_state=view_state,
+            layers=[glow_layer, layer],
             tooltip={"text": f"{city}, {country}"}
         ))
+
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # -------------------- PDF DOWNLOAD --------------------
+           # -------------------- PDF DOWNLOAD --------------------
+        st.markdown('<div class="section-box"><h3 class="blink-heading">📄 Download Your Trip Plan</h3>', unsafe_allow_html=True)
+
         pdf_file = create_pdf(result)
         st.download_button(
-            "📄 Download Full Trip Plan (PDF)",
+            label="📄 Download Full Trip Plan (PDF)",
             data=pdf_file,
             file_name=f"{city}_AI_TravelPlan.pdf",
             mime="application/pdf"
         )
 
+        st.markdown('</div>', unsafe_allow_html=True)
+
 # -------------------- FOOTER --------------------
 st.markdown("<hr>", unsafe_allow_html=True)
-st.markdown("<center>💜 AI Journey | Pastel Glow Edition | Powered by Gemini ✈️</center>", unsafe_allow_html=True)
+st.markdown("<center>💜 AI Journey |✈️</center>", unsafe_allow_html=True)
+
