@@ -92,13 +92,10 @@ if not API_KEY:
 genai.configure(api_key=API_KEY)
 
 # -------------------- COORDINATES --------------------
-# -------------------- LOAD CITY COORDINATES --------------------
-try:
-    df_coords = pd.read_csv("city_coords.csv")
-    city_coords = {row['city']: (row['latitude'], row['longitude']) for _, row in df_coords.iterrows()}
-except Exception as e:
-    st.warning(f"⚠️ Could not load city coordinates: {e}")
-    city_coords = {}
+df = pd.read_csv("worldcities.csv")
+
+# Create dictionary of coordinates
+city_coords = {row['city']: (row['lat'], row['lng']) for _, row in df.iterrows()}
 
 # -------------------- PDF FUNCTION --------------------
 def create_pdf(text):
@@ -255,3 +252,4 @@ if st.button("🌸 Generate My AI Travel Plan"):
 # -------------------- FOOTER --------------------
 st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown("<center>💜 AI Journey | ✈️</center>", unsafe_allow_html=True)
+
