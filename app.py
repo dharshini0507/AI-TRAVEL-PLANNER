@@ -126,28 +126,40 @@ if st.button("🌸 Generate My AI Travel Plan"):
     else:
         with st.spinner("🧭 Planning your dream trip..."):
             prompt = f"""
-            You are a professional travel planner.
+            You are a professional Indian travel planner.
             Generate a detailed {days}-day travel itinerary for {city}, {country}, starting on {travel_date}.
 
-            Include these sections clearly:
-            🗺️ **Trip Summary**
-            📅 **Day-wise Itinerary** — for each day include:
-                - Morning: activities, attractions (with timings)
-                - Afternoon: sightseeing, food, shopping, or culture
-                - Evening: local events, restaurants, or nightlife
-                - Add distances and travel durations between spots
-                - Add small travel tips for the day
-            💰 **Budget Breakdown**
-                - Total estimated cost within ${budget}
-                - Per day estimate and money-saving tips
-            🏨 **Hotels & Restaurants**
-                - Top 3 hotels (with approx. prices and location)
-                - Top 3 restaurants (with cuisine type and speciality)
-            💡 **Travel Tips**
-                - 5 helpful tips about transport, safety, and culture
+            ✈️ Focus on: {', '.join(interests)}.
+            🪔 Currency: Indian Rupees (₹).
 
-            Focus on {', '.join(interests)}.
-            Format neatly in markdown, well-structured and easy to read.
+            Include these sections clearly:
+
+            🗺️ **Trip Summary**
+            - 4–5 line overview describing the travel theme, vibe, and highlights.
+
+            📅 **Day-wise Itinerary**
+            For each day, provide:
+              - Morning: main attractions, activities, and timings
+              - Afternoon: sightseeing, culture, or shopping
+              - Evening: food, events, or nightlife
+              - Include distances, travel time between places, and 1 small travel tip
+            (Keep this section detailed — each day must feel realistic and immersive.)
+
+            💰 **Budget Breakdown (in ₹)**
+            - Total cost within ₹{int(budget * 83)} (approx conversion from ${budget})
+            - Per-day estimate (₹{round((budget * 83) / days)})
+            - Mention 3 key spending categories (Stay, Food, Local Travel) in short keywords.
+
+            🏨 **Hotels & Restaurants**
+            - Top 3 hotels: name + area + approx ₹/night
+            - Top 3 restaurants: name + cuisine type + must-try dish
+            (Keep concise, avoid paragraphs.)
+
+            💡 **Travel Tips**
+            - 3–5 short, sharp tips on transport, safety, language, or culture.
+            (Use bullet points, short lines only.)
+
+            Format cleanly in Markdown, readable for Streamlit.
             """
 
             result = chunked_generate(prompt_text=prompt)
@@ -159,38 +171,58 @@ if st.button("🌸 Generate My AI Travel Plan"):
         st.markdown(result)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # -------------------- MAP VIEW --------------------
-        st.markdown('<div class="section-box"><h3>📍 Map View of Destination</h3>', unsafe_allow_html=True)
-        try:
-            df = pd.read_csv("worldcities.csv")
-            if {'city', 'lat', 'lng'}.issubset(df.columns):
-                city_data = df[df['city'].str.lower() == city.lower()]
-                if not city_data.empty:
-                    lat, lon = city_data.iloc[0]['lat'], city_data.iloc[0]['lng']
-                    city_df = pd.DataFrame([{'lat': lat, 'lon': lon, 'city': city}])
+     # -------------------- MAP VIEW --------------------
+st.markdown('<div class="section-box"><h3>📍 Map View of Destination</h3>', unsafe_allow_html=True)
 
-                    st.pydeck_chart(pdk.Deck(
-                        map_style="mapbox://styles/mapbox/streets-v12",
-                        initial_view_state=pdk.ViewState(latitude=lat, longitude=lon, zoom=10, pitch=45),
-                        layers=[
-                            pdk.Layer(
-                                "ScatterplotLayer",
-                                data=city_df,
-                                get_position='[lon, lat]',
-                                get_color='[200, 100, 255]',
-                                get_radius=5000,
-                                pickable=True
-                            )
-                        ],
-                        tooltip={"text": f"{city}, {country}"}
-                    ))
-                else:
-                    st.warning(f"City '{city}' not found in worldcities.csv.")
-            else:
-                st.error("CSV must include columns: city, lat, lng.")
-        except Exception as e:
-            st.error(f"⚠️ Error showing map: {e}")
-        st.markdown('</div>', unsafe_allow_html=True)
+try:
+    df = pd.read_csv("worldcities.csv")
+
+    # Check required columns
+    if {'city', 'lat', 'lng'}.issubset(df.columns):
+        city_data = df[df['city'].str.lower() == city.lower()]
+
+        if not city_data.empty:
+            lat, lon = float(city_data.iloc[0]['lat']), float(city_data.iloc[0]['lng'])
+            city_df = pd.DataFrame([{'lat': lat, 'lon': lon, 'city': city}])
+
+            # 🔑 Optional: add Mapbox token (if you have one)
+            # st.pydeck_chart uses Streamlit’s default key if none is provided.
+            # You can set your own key in Streamlit Cloud → Settings → Secrets.
+            # Example: pdk.settings.mapbox_api_key = st.secrets["MAPBOX_KEY"]
+
+            # Create deck.gl map
+            st.pydeck_chart(pdk.Deck(
+                map_style="mapbox://styles/mapbox/light-v11",  # reliable style
+                initial_view_state=pdk.ViewState(
+                    latitude=lat,
+                    longitude=lon,
+                    zoom=6,       # zoom out to see the country context
+                    pitch=30
+                ),
+                layers=[
+                    pdk.Layer(
+                        "ScatterplotLayer",
+                        data=city_df,
+                        get_position='[lon, lat]',
+                        get_color='[255, 75, 150, 240]',  # pink marker
+                        get_radius=20000,
+                        pickable=True
+                    )
+                ],
+                tooltip={"text": f"📍 {city}, {country}\nLat: {lat:.2f}, Lon: {lon:.2f}"}
+            ))
+
+            st.success(f"🗺️ Showing {city}, {country} on map!")
+
+        else:
+            st.warning(f"⚠️ City '{city}' not found in worldcities.csv. Check spelling.")
+    else:
+        st.error("CSV file must include columns: city, lat, lng.")
+
+except Exception as e:
+    st.error(f"⚠️ Error showing map: {e}")
+
+st.markdown('</div>', unsafe_allow_html=True)
 
         # -------------------- DOWNLOAD --------------------
         st.markdown('<div class="section-box"><h3>📄 Download Trip Plan</h3>', unsafe_allow_html=True)
@@ -205,3 +237,4 @@ if st.button("🌸 Generate My AI Travel Plan"):
 
 # -------------------- FOOTER --------------------
 st.markdown("<hr><center>💜 AI Journey Planner |✨</center>", unsafe_allow_html=True)
+
