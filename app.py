@@ -102,8 +102,28 @@ if not API_KEY:
     st.stop()
 genai.configure(api_key=API_KEY)
 
-# ✅ FIXED MODEL INITIALIZATION
-model = genai.GenerativeModel("gemini-1.5-pro")
+# -------------------- CHUNKED GENERATE FUNCTION --------------------
+def chunked_generate(prompt_text, model_name="models/gemini-2.5-flash", chunk_size=1500):
+    """Generates long text safely in chunks using Gemini 2.5 Flash."""
+    try:
+        model = genai.GenerativeModel(model_name)
+    except Exception as e:
+        return f"[❌ Model initialization failed: {e}]"
+
+    chunks = textwrap.wrap(prompt_text, chunk_size)
+    results = []
+
+    for c in chunks:
+        try:
+            response = model.generate_content(c)
+            if hasattr(response, "text"):
+                results.append(response.text)
+            else:
+                results.append("[⚠️ No text generated]")
+        except Exception as e:
+            results.append(f"[⚠️ Error generating chunk: {e}]")
+
+    return "\n".join(results)
 
 # -------------------- COORDINATES --------------------
 df = pd.read_csv("worldcities.csv")
@@ -158,11 +178,11 @@ if st.button("🌸 Generate My AI Travel Plan"):
             **5️⃣ 5 Smart Travel Tips**
             """
 
-            response = model.generate_content(prompt)
-            result = response.text.strip()
+            result = chunked_generate(prompt)
 
         st.success(f"✅ Your AI Travel Plan for {city}, {country} is Ready!")
 
+        # Section Display Helpers
         def show_section(title, content):
             st.markdown(f"### {title}")
             st.markdown(content)
