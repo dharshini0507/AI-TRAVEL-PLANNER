@@ -159,63 +159,56 @@ if st.button("🌸 Generate My AI Travel Plan"):
     if not country or not city or not interests:
         st.error("⚠️ Please fill all fields before generating your plan.")
     else:
-        with st.spinner("✨ Creating your personalized travel plan..."):
+        with st.spinner("✨ Creating your travel plan..."):
             prompt = f"""
-            You are a professional and experienced travel planner AI.
-            Create a highly detailed, well-structured travel plan for the following input:
-
-            Destination: {city}, {country}
+            You are a professional AI travel planner.
+            Create a concise, clear, day-wise travel plan for:
+            City: {city}, {country}
             Duration: {days} days
-            Start Date: {travel_date}
-            Total Budget: ${budget} USD
-            Traveler Interests: {', '.join(interests)}
+            Date: {travel_date}
+            Budget: ${budget}
+            Interests: {', '.join(interests)}
 
-            --- STRUCTURE YOUR RESPONSE EXACTLY LIKE THIS ---
+            --- RESPONSE FORMAT ---
 
-            **1️⃣ Trip Summary**
-            Write a short, engaging 2-3 paragraph introduction about {city}, describing:
-            - Its culture, vibe, and best time to visit.
-            - Why it's great for travelers with interests in {', '.join(interests)}.
-            - A brief highlight of what this trip will cover.
+            **1️⃣ Trip Summary (5 lines max)**
+            Briefly describe {city}'s vibe, attractions, and why it's great for {', '.join(interests)}.
 
             **2️⃣ Day-wise Itinerary**
-            Write a day-by-day travel plan for {days} days.
-            For each day, include:
-            - **Day X: [Theme or Area Name]**
-            - **Morning:** Activities, must-see attractions, or experiences (be realistic and locally accurate).
-            - **Afternoon:** Local food or sightseeing plans.
-            - **Evening:** Cultural experiences, shopping, or nightlife.
-            - **Estimated Cost:** Mention approximate cost for that day in USD.
+            For {days} days, write short, realistic daily plans like:
+            - Day X: [Theme]
+              - Morning: ...
+              - Afternoon: ...
+              - Evening: ...
+              - Est. Cost: $...
 
-            Make sure each day's plan feels continuous and fits traveler interests (like {', '.join(interests)}).
-
-            **3️⃣ Budget Breakdown (Total: ${budget} USD)**
-            Create a breakdown with approximate costs in bullet or table form like:
+            **3️⃣ Budget Breakdown (Total ${budget})**
+            Simple bullet points:
             - Accommodation: $...
             - Food: $...
-            - Transportation: $...
-            - Sightseeing/Activities: $...
-            - Miscellaneous: $...
-            - **Total Estimated: ${budget} USD**
+            - Transport: $...
+            - Activities: $...
+            - Misc: $...
 
-            **4️⃣ Top 5 Hotels & Restaurants**
-            List:
-            - 5 Recommended Hotels: (Name + Why they are good)
-            - 5 Recommended Restaurants: (Name + Must-try dishes)
+            **4️⃣ Top 3 Hotels & Restaurants**
+            - Hotels: (Name + short reason)
+            - Restaurants: (Name + must-try dish)
 
-            **5️⃣ 5 Useful Travel Tips**
-            Give 5 short, smart, destination-relevant travel tips.
-            Example: safety, weather, transport, local etiquette, or packing advice.
-
-            ---
-            Use friendly and professional tone. Make it readable and visually formatted.
+            **5️⃣ 5 Smart Travel Tips**
+            Short, relevant travel tips for visitors to {city}.
             """
 
-            result = chunked_generate(prompt)
+            response = model.generate_content(prompt)
+            result = response.text.strip()
 
         st.success(f"✅ Your AI Travel Plan for {city}, {country} is Ready!")
 
-        # -------------------- DISPLAY IN ORDER --------------------
+        # Display output in sections
+        def show_section(title, content):
+            st.markdown(f"### {title}")
+            st.markdown(content)
+            st.markdown("---")
+
         def extract_section(text, start, end=None):
             try:
                 if end:
@@ -225,76 +218,99 @@ if st.button("🌸 Generate My AI Travel Plan"):
             except Exception:
                 return "⚠️ Section not properly generated."
 
-        # Trip Summary
-        st.markdown('<div class="section-box"><h3>1️⃣ Trip Summary</h3>', unsafe_allow_html=True)
-        st.markdown(extract_section(result, "**1️⃣", "**2️⃣"), unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        show_section("1️⃣ Trip Summary", extract_section(result, "**1️⃣", "**2️⃣"))
+        show_section("2️⃣ Day-wise Itinerary", extract_section(result, "**2️⃣", "**3️⃣"))
+        show_section("3️⃣ Budget Breakdown", extract_section(result, "**3️⃣", "**4️⃣"))
+        show_section("4️⃣ Top 3 Hotels & Restaurants", extract_section(result, "**4️⃣", "**5️⃣"))
+        show_section("5️⃣ Smart Travel Tips", extract_section(result, "**5️⃣"))
 
-        # Day-wise Itinerary
-        st.markdown('<div class="section-box"><h3>2️⃣ Day-wise Itinerary</h3>', unsafe_allow_html=True)
-        st.markdown(extract_section(result, "**2️⃣", "**3️⃣"), unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+# -------------------- MAP VIEW --------------------
+st.markdown('<div class="section-box"><h3>📍 World Cities Map View</h3>', unsafe_allow_html=True)
 
-        # Budget Breakdown
-        st.markdown('<div class="section-box"><h3>3️⃣ Budget Breakdown</h3>', unsafe_allow_html=True)
-        st.markdown(extract_section(result, "**3️⃣", "**4️⃣"), unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+try:
+    # Load the worldcities.csv file
+    df = pd.read_csv("worldcities.csv")
 
-        # Hotels & Restaurants
-        st.markdown('<div class="section-box"><h3>4️⃣ Top 5 Hotels & Restaurants</h3>', unsafe_allow_html=True)
-        st.markdown(extract_section(result, "**4️⃣", "**5️⃣"), unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+    # Make sure it has required columns
+    if {'city', 'lat', 'lng'}.issubset(df.columns):
+        st.success(f"✅ Loaded {len(df)} city coordinates from worldcities.csv!")
 
-        # Travel Tips
-        st.markdown('<div class="section-box"><h3>5️⃣ Useful Travel Tips</h3>', unsafe_allow_html=True)
-        st.markdown(extract_section(result, "**5️⃣"), unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        # Rename lng → lon for pydeck compatibility
+        df.rename(columns={'lng': 'lon'}, inplace=True)
 
-        # -------------------- MAP VIEW --------------------
-        st.markdown('<div class="section-box"><h3>📍 City Map View</h3>', unsafe_allow_html=True)
-        if city in city_coords:
-            lat, lon = city_coords[city]
-            zoom_level = 8
-        else:
-            st.warning(f"⚠️ No exact coordinates found for {city}. Showing World Map.")
-            lat, lon = (0, 0)
-            zoom_level = 1
-
+        # Create map layers
         layer = pdk.Layer(
             "ScatterplotLayer",
-            data=[{"lat": lat, "lon": lon}],
+            data=df,
             get_position='[lon, lat]',
-            get_color='[160, 32, 240, 230]',
-            get_radius=40000,
+            get_color='[155, 89, 182, 180]',  # pastel purple points
+            get_radius=20000,
+            pickable=True,
         )
 
         glow_layer = pdk.Layer(
             "ScatterplotLayer",
-            data=[{"lat": lat, "lon": lon}],
+            data=df,
             get_position='[lon, lat]',
-            get_color='[210, 150, 255, 120]',
-            get_radius=90000,
+            get_color='[210, 150, 255, 80]',
+            get_radius=40000,
         )
 
-        view_state = pdk.ViewState(latitude=lat, longitude=lon, zoom=zoom_level, pitch=0)
-        st.pydeck_chart(pdk.Deck(map_style="light", initial_view_state=view_state, layers=[glow_layer, layer], tooltip={"text": f"{city}, {country}"}))
-        st.markdown('</div>', unsafe_allow_html=True)
+        # Compute map center based on dataset
+        center_lat = df['lat'].mean()
+        center_lon = df['lon'].mean()
+
+        view_state = pdk.ViewState(
+            latitude=center_lat,
+            longitude=center_lon,
+            zoom=1.5,
+            pitch=0
+        )
+
+        # Display interactive map
+        st.pydeck_chart(pdk.Deck(
+            map_style="mapbox://styles/mapbox/light-v9",
+            initial_view_state=view_state,
+            layers=[glow_layer, layer],
+            tooltip={"text": "{city}\nLat: {lat}\nLon: {lon}"}
+        ))
+
+    else:
+        st.error("❌ 'worldcities.csv' must include 'city', 'lat', and 'lng' columns.")
+
+except FileNotFoundError:
+    st.error("⚠️ Could not find 'worldcities.csv'. Please ensure it’s in the same directory as your Streamlit app.")
+except Exception as e:
+    st.error(f"⚠️ Error loading map data: {e}")
+
+st.markdown('</div>', unsafe_allow_html=True)
+
 
         # -------------------- PDF DOWNLOAD --------------------
-        st.markdown('<div class="section-box"><h3>📄 Download Your Trip Plan</h3>', unsafe_allow_html=True)
-        pdf_file = create_pdf(result)
+        st.subheader("📄 Download Trip Plan")
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", "B", 14)
+        pdf.cell(0, 10, f"AI Travel Plan for {city}", ln=True, align="C")
+        pdf.set_font("Arial", size=12)
+        pdf.multi_cell(0, 8, result)
+        pdf_buffer = BytesIO()
+        pdf.output(pdf_buffer)
+        pdf_buffer.seek(0)
+
         st.download_button(
-            label="📄 Download Full Trip Plan (PDF)",
-            data=pdf_file,
-            file_name=f"{city}_AI_TravelPlan.pdf",
+            label="📄 Download Plan (PDF)",
+            data=pdf_buffer,
+            file_name=f"{city}_TravelPlan.pdf",
             mime="application/pdf"
         )
-        st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 # -------------------- FOOTER --------------------
 st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown("<center>💜 AI Journey | ✈️</center>", unsafe_allow_html=True)
+
 
 
 
