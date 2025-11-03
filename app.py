@@ -159,7 +159,7 @@ if st.button("🌸 Generate My AI Travel Plan"):
             - 3–5 short, sharp tips on transport, safety, language, or culture.
             (Use bullet points, short lines only.)
 
-            Format cleanly in Markdown, readable for Streamlit.
+            # Format cleanly in Markdown, readable for Streamlit.
             """
             result = chunked_generate(prompt_text=prompt)
 
@@ -167,6 +167,54 @@ if st.button("🌸 Generate My AI Travel Plan"):
         st.success(f"✅ Travel Plan for {city}, {country} Ready!")
         st.markdown('<div class="section-box">', unsafe_allow_html=True)
         st.markdown(result)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # -------------------- MAP VIEW --------------------
+        st.markdown('<div class="section-box"><h3>📍 Map View of Destination</h3>', unsafe_allow_html=True)
+        try:
+            df = pd.read_csv("worldcities.csv")
+            if {'city', 'lat', 'lng'}.issubset(df.columns):
+                city_data = df[df['city'].str.lower() == city.lower()]
+                if not city_data.empty:
+                    lat, lon = float(city_data.iloc[0]['lat']), float(city_data.iloc[0]['lng'])
+                    city_df = pd.DataFrame([{'lat': lat, 'lon': lon, 'city': city}])
+
+                    st.pydeck_chart(pdk.Deck(
+                        map_style="mapbox://styles/mapbox/satellite-streets-v12",
+                        initial_view_state=pdk.ViewState(
+                            latitude=lat,
+                            longitude=lon,
+                            zoom=4,
+                            pitch=45
+                        ),
+                        layers=[
+                            pdk.Layer(
+                                "ScatterplotLayer",
+                                data=city_df,
+                                get_position='[lon, lat]',
+                                get_color='[255, 75, 150, 240]',
+                                get_radius=30000,
+                                pickable=True
+                            ),
+                            pdk.Layer(
+                                "TextLayer",
+                                data=city_df,
+                                get_position='[lon, lat]',
+                                get_text='city',
+                                get_color='[255, 255, 255, 255]',
+                                get_size=24,
+                                get_alignment_baseline='"bottom"'
+                            )
+                        ],
+                        tooltip={"text": f"📍 {city}, {country}\nLat: {lat:.2f}, Lon: {lon:.2f}"}
+                    ))
+                    st.success(f"🗺️ Showing {city}, {country} on world map!")
+                else:
+                    st.warning(f"⚠️ City '{city}' not found in worldcities.csv.")
+            else:
+                st.error("CSV file must include columns: city, lat, lng.")
+        except Exception as e:
+            st.error(f"⚠️ Error showing map: {e}")
         st.markdown('</div>', unsafe_allow_html=True)
 
         # -------------------- DOWNLOAD PDF --------------------
@@ -182,3 +230,5 @@ if st.button("🌸 Generate My AI Travel Plan"):
 
 # -------------------- FOOTER --------------------
 st.markdown("<hr><center>💜 AI Journey Planner |✨</center>", unsafe_allow_html=True)
+
+
