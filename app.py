@@ -77,11 +77,12 @@ if not API_KEY:
 if not API_KEY:
     st.warning("⚠️ Please enter your Google API key to continue.")
     st.stop()
+
 genai.configure(api_key=API_KEY)
 
 # -------------------- CHUNKED GENERATE FUNCTION --------------------
 def chunked_generate(prompt_text, model_name="models/gemini-2.5-flash", chunk_size=1500):
-    """Generates long text safely in chunks using Gemini 2.5 Flash."""
+    """Generate long text safely in chunks using Gemini 2.5 Flash."""
     try:
         model = genai.GenerativeModel(model_name)
     except Exception as e:
@@ -110,7 +111,6 @@ def create_pdf(text):
 
 # -------------------- INPUT SECTION --------------------
 st.markdown("<div class='section-box'><h2>📝 Plan Your Trip</h2>", unsafe_allow_html=True)
-
 country = st.text_input("🌍 Country", value="India")
 city = st.text_input("🏙️ City", value="Goa")
 days = st.number_input("🗓️ Number of Days", 1, 15, 5)
@@ -124,37 +124,40 @@ if st.button("🌸 Generate My AI Travel Plan"):
     if not country or not city or not interests:
         st.error("⚠️ Please fill all fields.")
     else:
-        with st.spinner("✨ Crafting your perfect itinerary..."):
+        with st.spinner("🧭 Planning your dream trip..."):
             prompt = f"""
-            You are a professional AI travel planner.
-            Create a detailed {days}-day travel itinerary for {city}, {country}, starting {travel_date}.
-            Include the following sections clearly:
-            1️⃣ Trip Summary (brief intro)
-            2️⃣ Day-wise Itinerary (Morning, Afternoon, Evening)
-            3️⃣ Budget Breakdown (Total ${budget}, daily estimate, categories)
-            4️⃣ Top 3 Hotels & Restaurants (with short descriptions)
-            5️⃣ Smart Travel Tips (5 tips on safety, local customs, best time, etc.)
-            Interests: {', '.join(interests)}.
+            You are a professional travel planner.
+            Generate a detailed {days}-day travel itinerary for {city}, {country}, starting on {travel_date}.
+
+            Include these sections clearly:
+            🗺️ **Trip Summary**
+            📅 **Day-wise Itinerary** — for each day include:
+                - Morning: activities, attractions (with timings)
+                - Afternoon: sightseeing, food, shopping, or culture
+                - Evening: local events, restaurants, or nightlife
+                - Add distances and travel durations between spots
+                - Add small travel tips for the day
+            💰 **Budget Breakdown**
+                - Total estimated cost within ${budget}
+                - Per day estimate and money-saving tips
+            🏨 **Hotels & Restaurants**
+                - Top 3 hotels (with approx. prices and location)
+                - Top 3 restaurants (with cuisine type and speciality)
+            💡 **Travel Tips**
+                - 5 helpful tips about transport, safety, and culture
+
+            Focus on {', '.join(interests)}.
+            Format neatly in markdown, well-structured and easy to read.
             """
 
-            result = chunked_generate(prompt)
-
-        st.success(f"✅ Travel Plan for {city}, {country} Ready!")
+            result = chunked_generate(prompt_text=prompt)
 
         # -------------------- DISPLAY SECTIONS --------------------
-        def section(title, key):
-            st.markdown(f"### {title}")
-            if key in result:
-                st.markdown(result.split(key)[-1].split("**")[0])
-            else:
-                st.markdown("⚠️ Section not generated.")
-            st.markdown("---")
+        st.success(f"✅ Travel Plan for {city}, {country} Ready!")
 
-        section("1️⃣ Trip Summary", "1️⃣")
-        section("2️⃣ Day-wise Itinerary", "2️⃣")
-        section("3️⃣ Budget Breakdown", "3️⃣")
-        section("4️⃣ Top 3 Hotels & Restaurants", "4️⃣")
-        section("5️⃣ Smart Travel Tips", "5️⃣")
+        st.markdown('<div class="section-box">', unsafe_allow_html=True)
+        st.markdown(result)
+        st.markdown('</div>', unsafe_allow_html=True)
 
         # -------------------- MAP VIEW --------------------
         st.markdown('<div class="section-box"><h3>📍 Map View of Destination</h3>', unsafe_allow_html=True)
@@ -190,7 +193,7 @@ if st.button("🌸 Generate My AI Travel Plan"):
         st.markdown('</div>', unsafe_allow_html=True)
 
         # -------------------- DOWNLOAD --------------------
-        st.markdown('<div class="section-box"><h3>📄 Download Plan</h3>', unsafe_allow_html=True)
+        st.markdown('<div class="section-box"><h3>📄 Download Trip Plan</h3>', unsafe_allow_html=True)
         pdf_data = create_pdf(result)
         st.download_button(
             label="📄 Download Full Trip Plan (PDF)",
@@ -201,4 +204,4 @@ if st.button("🌸 Generate My AI Travel Plan"):
         st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------- FOOTER --------------------
-st.markdown("<hr><center>💜 AI Journey Planner | </center>", unsafe_allow_html=True)
+st.markdown("<hr><center>💜 AI Journey Planner |✨</center>", unsafe_allow_html=True)
