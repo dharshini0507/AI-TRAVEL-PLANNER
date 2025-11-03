@@ -6,7 +6,7 @@ from datetime import date
 import textwrap
 import pydeck as pdk
 import pandas as pd
-
+import os
 
 # -------------------- PAGE CONFIG --------------------
 st.set_page_config(page_title="🌎 AI Travel Planner", page_icon="✈️", layout="wide")
@@ -102,10 +102,11 @@ if not API_KEY:
     st.stop()
 genai.configure(api_key=API_KEY)
 
+# ✅ FIXED MODEL INITIALIZATION
+model = genai.GenerativeModel("gemini-1.5-pro")
+
 # -------------------- COORDINATES --------------------
 df = pd.read_csv("worldcities.csv")
-
-# Create dictionary of coordinates
 city_coords = {row['city']: (row['lat'], row['lng']) for _, row in df.iterrows()}
 
 # -------------------- PDF FUNCTION --------------------
@@ -119,31 +120,10 @@ def create_pdf(text):
     pdf_output = pdf.output(dest="S").encode("latin-1")
     return BytesIO(pdf_output)
 
-# -------------------- GENERATION FUNCTION --------------------
-def chunked_generate(prompt_text, model_name="gemini-2.5-flash", chunk_size=1500):
-    model = genai.GenerativeModel(model_name)
-    chunks = textwrap.wrap(prompt_text, chunk_size)
-    results = []
-    for c in chunks:
-        try:
-            response = model.generate_content(c)
-            if hasattr(response, "text"):
-                results.append(response.text)
-        except Exception as e:
-            results.append(f"[Error: {e}]")
-    return "\n".join(results)
-
 # -------------------- INPUT SECTION --------------------
 st.markdown("""
 <div class='section-box'>
-<h2 style="text-align:center; font-weight:700;">
-<span>📝</span> 
-<span style="background: linear-gradient(90deg, #7a1fa2, #9c4dcc, #c77dff);
--webkit-background-clip: text; -webkit-text-fill-color: transparent;
-text-shadow: 0 0 20px rgba(155, 89, 182, 0.7);">
-Plan Your Trip
-</span>
-</h2>
+<h2>📝 Plan Your Trip</h2>
 """, unsafe_allow_html=True)
 
 country = st.text_input("🌍 Country", value="India")
@@ -172,30 +152,10 @@ if st.button("🌸 Generate My AI Travel Plan"):
             --- RESPONSE FORMAT ---
 
             **1️⃣ Trip Summary (5 lines max)**
-            Briefly describe {city}'s vibe, attractions, and why it's great for {', '.join(interests)}.
-
             **2️⃣ Day-wise Itinerary**
-            For {days} days, write short, realistic daily plans like:
-            - Day X: [Theme]
-              - Morning: ...
-              - Afternoon: ...
-              - Evening: ...
-              - Est. Cost: $...
-
             **3️⃣ Budget Breakdown (Total ${budget})**
-            Simple bullet points:
-            - Accommodation: $...
-            - Food: $...
-            - Transport: $...
-            - Activities: $...
-            - Misc: $...
-
             **4️⃣ Top 3 Hotels & Restaurants**
-            - Hotels: (Name + short reason)
-            - Restaurants: (Name + must-try dish)
-
             **5️⃣ 5 Smart Travel Tips**
-            Short, relevant travel tips for visitors to {city}.
             """
 
             response = model.generate_content(prompt)
@@ -203,7 +163,6 @@ if st.button("🌸 Generate My AI Travel Plan"):
 
         st.success(f"✅ Your AI Travel Plan for {city}, {country} is Ready!")
 
-        # Display output in sections
         def show_section(title, content):
             st.markdown(f"### {title}")
             st.markdown(content)
@@ -223,80 +182,63 @@ if st.button("🌸 Generate My AI Travel Plan"):
         show_section("3️⃣ Budget Breakdown", extract_section(result, "**3️⃣", "**4️⃣"))
         show_section("4️⃣ Top 3 Hotels & Restaurants", extract_section(result, "**4️⃣", "**5️⃣"))
         show_section("5️⃣ Smart Travel Tips", extract_section(result, "**5️⃣"))
-# -------------------- MAP VIEW --------------------
-st.markdown('<div class="section-box"><h3>📍 World Cities Map View</h3>', unsafe_allow_html=True)
 
-try:
-    # Load the worldcities.csv file
-    df = pd.read_csv("worldcities.csv")
+        # -------------------- MAP VIEW --------------------
+        st.markdown('<div class="section-box"><h3>📍 World Cities Map View</h3>', unsafe_allow_html=True)
+        try:
+            if {'city', 'lat', 'lng'}.issubset(df.columns):
+                st.success(f"✅ Loaded {len(df)} city coordinates from worldcities.csv!")
 
-    if {'city', 'lat', 'lng'}.issubset(df.columns):
-        st.success(f"✅ Loaded {len(df)} city coordinates from worldcities.csv!")
+                df.rename(columns={'lng': 'lon'}, inplace=True)
+                layer = pdk.Layer(
+                    "ScatterplotLayer",
+                    data=df,
+                    get_position='[lon, lat]',
+                    get_color='[155, 89, 182, 180]',
+                    get_radius=20000,
+                    pickable=True,
+                )
+                glow_layer = pdk.Layer(
+                    "ScatterplotLayer",
+                    data=df,
+                    get_position='[lon, lat]',
+                    get_color='[210, 150, 255, 80]',
+                    get_radius=40000,
+                )
 
-        # Rename lng → lon for pydeck
-        df.rename(columns={'lng': 'lon'}, inplace=True)
+                center_lat = df['lat'].mean()
+                center_lon = df['lon'].mean()
 
-        # Map layers
-        layer = pdk.Layer(
-            "ScatterplotLayer",
-            data=df,
-            get_position='[lon, lat]',
-            get_color='[155, 89, 182, 180]',
-            get_radius=20000,
-            pickable=True,
+                view_state = pdk.ViewState(
+                    latitude=center_lat,
+                    longitude=center_lon,
+                    zoom=1.5,
+                    pitch=0
+                )
+
+                st.pydeck_chart(pdk.Deck(
+                    map_style="mapbox://styles/mapbox/light-v9",
+                    initial_view_state=view_state,
+                    layers=[glow_layer, layer],
+                    tooltip={"text": "{city}\nLat: {lat}\nLon: {lon}"}
+                ))
+            else:
+                st.error("❌ 'worldcities.csv' must include 'city', 'lat', and 'lng' columns.")
+        except Exception as e:
+            st.error(f"⚠️ Error loading map data: {e}")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # -------------------- PDF DOWNLOAD --------------------
+        st.markdown('<div class="section-box"><h3>📄 Download Your Trip Plan</h3>', unsafe_allow_html=True)
+        pdf_file = create_pdf(result)
+        st.download_button(
+            label="📄 Download Full Trip Plan (PDF)",
+            data=pdf_file,
+            file_name=f"{city}_AI_TravelPlan.pdf",
+            mime="application/pdf"
         )
-
-        glow_layer = pdk.Layer(
-            "ScatterplotLayer",
-            data=df,
-            get_position='[lon, lat]',
-            get_color='[210, 150, 255, 80]',
-            get_radius=40000,
-        )
-
-        center_lat = df['lat'].mean()
-        center_lon = df['lon'].mean()
-
-        view_state = pdk.ViewState(
-            latitude=center_lat,
-            longitude=center_lon,
-            zoom=1.5,
-            pitch=0
-        )
-
-        st.pydeck_chart(pdk.Deck(
-            map_style="mapbox://styles/mapbox/light-v9",
-            initial_view_state=view_state,
-            layers=[glow_layer, layer],
-            tooltip={"text": "{city}\nLat: {lat}\nLon: {lon}"}
-        ))
-
-    else:
-        st.error("❌ 'worldcities.csv' must include 'city', 'lat', and 'lng' columns.")
-
-except FileNotFoundError:
-    st.error("⚠️ Could not find 'worldcities.csv'. Please ensure it’s in the same directory as your Streamlit app.")
-except Exception as e:
-    st.error(f"⚠️ Error loading map data: {e}")
-
-st.markdown('</div>', unsafe_allow_html=True)
-
-# -------------------- PDF DOWNLOAD --------------------
-st.markdown('<div class="section-box"><h3>📄 Download Your Trip Plan</h3>', unsafe_allow_html=True)
-pdf_file = create_pdf(result)
-st.download_button(
-    label="📄 Download Full Trip Plan (PDF)",
-    data=pdf_file,
-    file_name=f"{city}_AI_TravelPlan.pdf",
-    mime="application/pdf"
-)
-st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------- FOOTER --------------------
 st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown("<center>💜 AI Journey | ✈️</center>", unsafe_allow_html=True)
-
-
-
-
-
