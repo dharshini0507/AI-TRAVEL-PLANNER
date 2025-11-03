@@ -223,7 +223,6 @@ if st.button("🌸 Generate My AI Travel Plan"):
         show_section("3️⃣ Budget Breakdown", extract_section(result, "**3️⃣", "**4️⃣"))
         show_section("4️⃣ Top 3 Hotels & Restaurants", extract_section(result, "**4️⃣", "**5️⃣"))
         show_section("5️⃣ Smart Travel Tips", extract_section(result, "**5️⃣"))
-
 # -------------------- MAP VIEW --------------------
 st.markdown('<div class="section-box"><h3>📍 World Cities Map View</h3>', unsafe_allow_html=True)
 
@@ -231,19 +230,18 @@ try:
     # Load the worldcities.csv file
     df = pd.read_csv("worldcities.csv")
 
-    # Make sure it has required columns
     if {'city', 'lat', 'lng'}.issubset(df.columns):
         st.success(f"✅ Loaded {len(df)} city coordinates from worldcities.csv!")
 
-        # Rename lng → lon for pydeck compatibility
+        # Rename lng → lon for pydeck
         df.rename(columns={'lng': 'lon'}, inplace=True)
 
-        # Create map layers
+        # Map layers
         layer = pdk.Layer(
             "ScatterplotLayer",
             data=df,
             get_position='[lon, lat]',
-            get_color='[155, 89, 182, 180]',  # pastel purple points
+            get_color='[155, 89, 182, 180]',
             get_radius=20000,
             pickable=True,
         )
@@ -256,7 +254,6 @@ try:
             get_radius=40000,
         )
 
-        # Compute map center based on dataset
         center_lat = df['lat'].mean()
         center_lon = df['lon'].mean()
 
@@ -267,7 +264,6 @@ try:
             pitch=0
         )
 
-        # Display interactive map
         st.pydeck_chart(pdk.Deck(
             map_style="mapbox://styles/mapbox/light-v9",
             initial_view_state=view_state,
@@ -285,31 +281,21 @@ except Exception as e:
 
 st.markdown('</div>', unsafe_allow_html=True)
 
-
-        # -------------------- PDF DOWNLOAD --------------------
-        st.subheader("📄 Download Trip Plan")
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Arial", "B", 14)
-        pdf.cell(0, 10, f"AI Travel Plan for {city}", ln=True, align="C")
-        pdf.set_font("Arial", size=12)
-        pdf.multi_cell(0, 8, result)
-        pdf_buffer = BytesIO()
-        pdf.output(pdf_buffer)
-        pdf_buffer.seek(0)
-
-        st.download_button(
-            label="📄 Download Plan (PDF)",
-            data=pdf_buffer,
-            file_name=f"{city}_TravelPlan.pdf",
-            mime="application/pdf"
-        )
-
-
+# -------------------- PDF DOWNLOAD --------------------
+st.markdown('<div class="section-box"><h3>📄 Download Your Trip Plan</h3>', unsafe_allow_html=True)
+pdf_file = create_pdf(result)
+st.download_button(
+    label="📄 Download Full Trip Plan (PDF)",
+    data=pdf_file,
+    file_name=f"{city}_AI_TravelPlan.pdf",
+    mime="application/pdf"
+)
+st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------- FOOTER --------------------
 st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown("<center>💜 AI Journey | ✈️</center>", unsafe_allow_html=True)
+
 
 
 
