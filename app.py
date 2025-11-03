@@ -161,83 +161,97 @@ if st.button("🌸 Generate My AI Travel Plan"):
     else:
         with st.spinner("✨ Creating your personalized travel plan..."):
             prompt = f"""
-            Generate a {days}-day travel plan for {city}, {country}, starting {travel_date}.
-            Include:
-            1. A short trip summary
-            2. Day-wise itinerary
-            3. A budget breakdown (Total ${budget})
-            4. Top 5 hotel & restaurant recommendations
-            5. 5 useful travel tips
-            Focus on: {', '.join(interests)}.
+            You are a professional and experienced travel planner AI.
+            Create a highly detailed, well-structured travel plan for the following input:
+
+            Destination: {city}, {country}
+            Duration: {days} days
+            Start Date: {travel_date}
+            Total Budget: ${budget} USD
+            Traveler Interests: {', '.join(interests)}
+
+            --- STRUCTURE YOUR RESPONSE EXACTLY LIKE THIS ---
+
+            **1️⃣ Trip Summary**
+            Write a short, engaging 2-3 paragraph introduction about {city}, describing:
+            - Its culture, vibe, and best time to visit.
+            - Why it's great for travelers with interests in {', '.join(interests)}.
+            - A brief highlight of what this trip will cover.
+
+            **2️⃣ Day-wise Itinerary**
+            Write a day-by-day travel plan for {days} days.
+            For each day, include:
+            - **Day X: [Theme or Area Name]**
+            - **Morning:** Activities, must-see attractions, or experiences (be realistic and locally accurate).
+            - **Afternoon:** Local food or sightseeing plans.
+            - **Evening:** Cultural experiences, shopping, or nightlife.
+            - **Estimated Cost:** Mention approximate cost for that day in USD.
+
+            Make sure each day's plan feels continuous and fits traveler interests (like {', '.join(interests)}).
+
+            **3️⃣ Budget Breakdown (Total: ${budget} USD)**
+            Create a breakdown with approximate costs in bullet or table form like:
+            - Accommodation: $...
+            - Food: $...
+            - Transportation: $...
+            - Sightseeing/Activities: $...
+            - Miscellaneous: $...
+            - **Total Estimated: ${budget} USD**
+
+            **4️⃣ Top 5 Hotels & Restaurants**
+            List:
+            - 5 Recommended Hotels: (Name + Why they are good)
+            - 5 Recommended Restaurants: (Name + Must-try dishes)
+
+            **5️⃣ 5 Useful Travel Tips**
+            Give 5 short, smart, destination-relevant travel tips.
+            Example: safety, weather, transport, local etiquette, or packing advice.
+
+            ---
+            Use friendly and professional tone. Make it readable and visually formatted.
             """
+
             result = chunked_generate(prompt)
 
         st.success(f"✅ Your AI Travel Plan for {city}, {country} is Ready!")
 
-        # -------------------- SPLIT RESULT INTO SECTIONS --------------------
-        sections = result.split("\n\n")
-        trip_summary, itinerary, hotels, restaurants, tips = "", "", "", "", ""
+        # -------------------- DISPLAY IN ORDER --------------------
+        def extract_section(text, start, end=None):
+            try:
+                if end:
+                    return text.split(start)[-1].split(end)[0].strip()
+                else:
+                    return text.split(start)[-1].strip()
+            except Exception:
+                return "⚠️ Section not properly generated."
 
-        for sec in sections:
-            s = sec.lower()
-            if "summary" in s or "overview" in s:
-                trip_summary += sec + "\n\n"
-            elif "day" in s or "itinerary" in s:
-                itinerary += sec + "\n\n"
-            elif "hotel" in s or "stay" in s:
-                hotels += sec + "\n\n"
-            elif "restaurant" in s or "food" in s:
-                restaurants += sec + "\n\n"
-            elif "tip" in s or "advice" in s or "recommendation" in s:
-                tips += sec + "\n\n"
-
-        # -------------------- COMPLETE TRIP PLAN --------------------
-        st.markdown('<div class="section-box"><h3 class="blink-heading">🗺️ Complete Trip Plan</h3>', unsafe_allow_html=True)
-        st.markdown(trip_summary + itinerary, unsafe_allow_html=True)
+        # Trip Summary
+        st.markdown('<div class="section-box"><h3>1️⃣ Trip Summary</h3>', unsafe_allow_html=True)
+        st.markdown(extract_section(result, "**1️⃣", "**2️⃣"), unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # -------------------- HOTEL RECOMMENDATIONS --------------------
-        st.markdown('<div class="section-box"><h3 class="blink-heading">🏨 Hotel Recommendations</h3>', unsafe_allow_html=True)
-        if hotels.strip():
-            st.markdown(hotels, unsafe_allow_html=True)
-        else:
-            st.info("No specific hotel recommendations found.")
+        # Day-wise Itinerary
+        st.markdown('<div class="section-box"><h3>2️⃣ Day-wise Itinerary</h3>', unsafe_allow_html=True)
+        st.markdown(extract_section(result, "**2️⃣", "**3️⃣"), unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # -------------------- RESTAURANT RECOMMENDATIONS --------------------
-        st.markdown('<div class="section-box"><h3 class="blink-heading">🍽️ Restaurant Suggestions</h3>', unsafe_allow_html=True)
-        if restaurants.strip():
-            st.markdown(restaurants, unsafe_allow_html=True)
-        else:
-            st.info("No specific restaurant suggestions found.")
+        # Budget Breakdown
+        st.markdown('<div class="section-box"><h3>3️⃣ Budget Breakdown</h3>', unsafe_allow_html=True)
+        st.markdown(extract_section(result, "**3️⃣", "**4️⃣"), unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # -------------------- TRAVEL TIPS --------------------
-        st.markdown('<div class="section-box"><h3 class="blink-heading">💡 Travel Tips</h3>', unsafe_allow_html=True)
-        if tips.strip():
-            st.markdown(f"<div style='color:#4B0082; font-size:16px;'>{tips}</div>", unsafe_allow_html=True)
-        else:
-            st.warning("AI didn't generate travel tips — showing expert tips instead 🌸")
+        # Hotels & Restaurants
+        st.markdown('<div class="section-box"><h3>4️⃣ Top 5 Hotels & Restaurants</h3>', unsafe_allow_html=True)
+        st.markdown(extract_section(result, "**4️⃣", "**5️⃣"), unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-            default_tips = """
-            <ul style='color:#4B0082; font-size:16px; line-height:1.8;'>
-                <li>🌍 Always keep a digital and printed copy of your passport, ID, and travel insurance.</li>
-                <li>💰 Carry some local currency for small purchases where cards may not work.</li>
-                <li>🕐 Plan your travel times early to avoid rush hours and long queues.</li>
-                <li>📱 Keep your phone charged and download offline maps before you go.</li>
-                <li>🥤 Stay hydrated and take small breaks, especially when exploring cities on foot.</li>
-                <li>🔌 Carry a universal travel adapter for your electronic devices.</li>
-                <li>🧳 Travel light — pack only what you’ll actually need.</li>
-                <li>😷 Respect local customs, dress codes, and COVID safety rules if still applicable.</li>
-                <li>🚖 Use trusted transportation options (official taxis or rideshare apps).</li>
-                <li>📸 Capture memories, but don’t forget to live in the moment too 💜</li>
-            </ul>
-            """
-            st.markdown(default_tips, unsafe_allow_html=True)
+        # Travel Tips
+        st.markdown('<div class="section-box"><h3>5️⃣ Useful Travel Tips</h3>', unsafe_allow_html=True)
+        st.markdown(extract_section(result, "**5️⃣"), unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
         # -------------------- MAP VIEW --------------------
-        st.markdown('<div class="section-box"><h3 class="blink-heading">📍 City Map View</h3>', unsafe_allow_html=True)
+        st.markdown('<div class="section-box"><h3>📍 City Map View</h3>', unsafe_allow_html=True)
         if city in city_coords:
             lat, lon = city_coords[city]
             zoom_level = 8
@@ -267,7 +281,7 @@ if st.button("🌸 Generate My AI Travel Plan"):
         st.markdown('</div>', unsafe_allow_html=True)
 
         # -------------------- PDF DOWNLOAD --------------------
-        st.markdown('<div class="section-box"><h3 class="blink-heading">📄 Download Your Trip Plan</h3>', unsafe_allow_html=True)
+        st.markdown('<div class="section-box"><h3>📄 Download Your Trip Plan</h3>', unsafe_allow_html=True)
         pdf_file = create_pdf(result)
         st.download_button(
             label="📄 Download Full Trip Plan (PDF)",
@@ -281,5 +295,6 @@ if st.button("🌸 Generate My AI Travel Plan"):
 # -------------------- FOOTER --------------------
 st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown("<center>💜 AI Journey | ✈️</center>", unsafe_allow_html=True)
+
 
 
