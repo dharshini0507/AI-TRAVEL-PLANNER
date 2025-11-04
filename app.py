@@ -152,13 +152,11 @@ For each day, include:
 """
             result = chunked_generate(prompt_text=prompt)
 
-
-     # -------------------- DISPLAY OUTPUT --------------------
-st.success(f"✅ Travel Plan for {city}, {country} Ready!")
-st.markdown('<div class="section-box">', unsafe_allow_html=True)
-st.markdown(result)   # ✅ back to normal, fast output
-st.markdown('</div>', unsafe_allow_html=True)
-
+# -------------------- DISPLAY OUTPUT --------------------
+        st.success(f"✅ Travel Plan for {city}, {country} Ready!")
+        st.markdown('<div class="section-box">', unsafe_allow_html=True)
+        st.markdown(result)   # ✅ fast normal output
+        st.markdown('</div>', unsafe_allow_html=True)
 
         # -------------------- MAP VIEW --------------------
         st.markdown('<div class="section-box"><h3>📍 Map View of Destination</h3>', unsafe_allow_html=True)
@@ -182,14 +180,12 @@ st.markdown('</div>', unsafe_allow_html=True)
                             pitch=0
                         ),
                         layers=[
-                            # ✅ OpenStreetMap (No token required)
                             pdk.Layer(
                                 "TileLayer",
                                 data=None,
                                 get_tile_url="https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
                                 tile_size=256
                             ),
-                            # ✅ City Marker
                             pdk.Layer(
                                 "ScatterplotLayer",
                                 data=city_df,
@@ -198,7 +194,6 @@ st.markdown('</div>', unsafe_allow_html=True)
                                 get_radius=3000,
                                 pickable=True
                             ),
-                            # ✅ City Name Label
                             pdk.Layer(
                                 "TextLayer",
                                 data=city_df,
@@ -237,6 +232,7 @@ st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------- FOOTER --------------------
 st.markdown("<hr><center>💜 AI Journey Planner |✨</center>", unsafe_allow_html=True)
+
 
 
 
