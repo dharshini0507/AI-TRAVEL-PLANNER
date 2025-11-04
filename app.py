@@ -140,7 +140,7 @@ For each day, include:
 
 💡 Travel Tips: exactly 5 bullet points
 """
-           result = generate_fast(prompt)
+            result = generate_fast(prompt)   # ✅ Correctly Indented
 
 # -------------------- DISPLAY OUTPUT --------------------
         st.success(f"✅ Travel Plan for {city}, {country} Ready!")
@@ -222,6 +222,7 @@ For each day, include:
 
 # -------------------- FOOTER --------------------
 st.markdown("<hr><center>💜 AI Journey Planner |✨</center>", unsafe_allow_html=True)
+
 
 
 
