@@ -6,6 +6,7 @@ from datetime import date
 import textwrap
 import pydeck as pdk
 import pandas as pd
+import time
 
 # -------------------- PAGE CONFIG --------------------
 st.set_page_config(page_title="🌎 AI Travel Planner", page_icon="✈️", layout="wide")
@@ -125,7 +126,7 @@ if st.button("🌸 Generate My AI Travel Plan"):
     else:
         with st.spinner("🧭 Planning your dream trip..."):
             prompt = f"""
-You are a professional Indian travel planner.
+You are a professional travel planner.
 Generate a detailed {days}-day travel itinerary for {city}, {country}, starting on {travel_date}.
 
 ✈️ Focus on: {', '.join(interests)}.
@@ -139,10 +140,10 @@ Include these sections clearly:
 📅 **Day-wise Itinerary**
 For each day, provide:
   - **Start Time**, **Place Name**, and **Activity Description**
-  - Morning: main attractions, activities, and timings
+  - Morning: main attractions and experiences
   - Afternoon: sightseeing, culture, or shopping
   - Evening: food, events, or nightlife
-  - Include distances, travel time between places, and 1 small travel tip
+  - Mention approx distance/travel time and end with 1 short tip per day.
 
 💰 **Budget Breakdown (in ₹)**
 - Total cost within ₹{int(budget * 83)}
@@ -157,17 +158,15 @@ For each day, provide:
 - Give exactly 5 bullet points only.
 
 ---
-Do **not** add any explanation, notes, or text after the Travel Tips section.
-Do **not** mention Streamlit or anything unrelated to travel.
-Respond in clean Markdown only.
-**End your response after the Travel Tips section.**
+Do NOT add extra explanation or mention Streamlit.
+End your response after the Travel Tips section.
 """
             result = chunked_generate(prompt_text=prompt)
 
-        # -------------------- DISPLAY OUTPUT --------------------
+        # ✅ SMOOTH TYPING OUTPUT
         st.success(f"✅ Travel Plan for {city}, {country} Ready!")
         st.markdown('<div class="section-box">', unsafe_allow_html=True)
-        st.markdown(result)
+        stream_output(result)
         st.markdown('</div>', unsafe_allow_html=True)
 
         # -------------------- MAP VIEW --------------------
@@ -247,6 +246,7 @@ Respond in clean Markdown only.
 
 # -------------------- FOOTER --------------------
 st.markdown("<hr><center>💜 AI Journey Planner |✨</center>", unsafe_allow_html=True)
+
 
 
 
