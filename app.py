@@ -123,14 +123,14 @@ Generate a detailed {days}-day travel itinerary for {city}, {country}, starting 
 ✈️ Focus on: {', '.join(interests)}.
 🪔 Currency: Indian Rupees (₹).
 
-🗺️ Trip Summary: 4–5 line vibe description.
+🗺️ Trip Summary: 3-4 line vibe description.
 
 📅 Day-wise Itinerary:
 For each day, include:
 
 - **Morning:** Start time + place + what to do + small highlight
 - **Afternoon:** Next attraction / market / activity + include approx travel time or distance
-- **Evening:** Sunset spot / café / dinner / chill activity suggestion
+- **Evening:** Sunset spot / dinner / chill activity suggestion
 - **Food Suggestions:** Mention 1 breakfast place, 1 lunch spot, 1 dinner spot (name only, no long description)
 
 💰 Budget: total within ₹{int(budget * 83)}, per day ~₹{round((budget * 83) / days)}
@@ -138,7 +138,7 @@ For each day, include:
 🏨 Hotels: 3 best stays (name + location + approx ₹/night)
 🍽️ Restaurants: 3 best local food spots (name + cuisine + must try dish)
 
-💡 Travel Tips: exactly 5 bullet points
+💡 Travel Tips: exactly 3 bullet points
 """
             result = generate_fast(prompt)   # ✅ Correctly Indented
 
@@ -222,6 +222,7 @@ For each day, include:
 
 # -------------------- FOOTER --------------------
 st.markdown("<hr><center>💜 AI Journey Planner |✨</center>", unsafe_allow_html=True)
+
 
 
 
