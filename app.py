@@ -118,7 +118,6 @@ budget = st.number_input("💰 Budget (USD)", 100, 20000, 1500)
 travel_date = st.date_input("📅 Start Date", date.today())
 interests = st.multiselect("🎯 Interests", ["Nature", "Adventure", "Food", "Culture", "Beaches", "History", "Shopping"])
 st.markdown('</div>', unsafe_allow_html=True)
-
 # -------------------- MAIN ACTION --------------------
 if st.button("🌸 Generate My AI Travel Plan"):
     if not country or not city or not interests:
@@ -126,44 +125,46 @@ if st.button("🌸 Generate My AI Travel Plan"):
     else:
         with st.spinner("🧭 Planning your dream trip..."):
             prompt = f"""
-            You are a professional Indian travel planner.
-            Generate a detailed {days}-day travel itinerary for {city}, {country}, starting on {travel_date}.
+You are a professional Indian travel planner.
+Generate a detailed {days}-day travel itinerary for {city}, {country}, starting on {travel_date}.
 
-            ✈️ Focus on: {', '.join(interests)}.
-            🪔 Currency: Indian Rupees (₹).
+✈️ Focus on: {', '.join(interests)}.
+🪔 Currency: Indian Rupees (₹).
 
-            Include these sections clearly:
+Include these sections clearly:
 
-            🗺️ **Trip Summary**
-            - 4–5 line overview describing the travel theme, vibe, and highlights.
+🗺️ **Trip Summary**
+- 4–5 line overview describing the travel theme, vibe, and highlights.
 
-            📅 **Day-wise Itinerary**
-            For each day, provide:
-              - Morning: main attractions, activities, and timings
-              - Afternoon: sightseeing, culture, or shopping
-              - Evening: food, events, or nightlife
-              - Include distances, travel time between places, and 1 small travel tip
-            (Keep this section detailed — each day must feel realistic and immersive.)
+📅 **Day-wise Itinerary**
+For each day, provide:
+  - **Start Time**, **Place Name**, and **Activity Description**
+  - Morning: main attractions, activities, and timings
+  - Afternoon: sightseeing, culture, or shopping
+  - Evening: food, events, or nightlife
+  - Include distances, travel time between places, and 1 small travel tip
 
-            💰 **Budget Breakdown (in ₹)**
-            - Total cost within ₹{int(budget * 83)} (approx conversion from ${budget})
-            - Per-day estimate (₹{round((budget * 83) / days)})
-            - Mention 3 key spending categories (Stay, Food, Local Travel) in short keywords.
+💰 **Budget Breakdown (in ₹)**
+- Total cost within ₹{int(budget * 83)}
+- Per-day estimate (₹{round((budget * 83) / days)})
+- Key spending categories: Stay, Food, Travel.
 
-            🏨 **Hotels & Restaurants**
-            - Top 3 hotels: name + area + approx ₹/night
-            - Top 3 restaurants: name + cuisine type + must-try dish
-            (Keep concise, avoid paragraphs.)
+🏨 **Hotels & Restaurants**
+- Top 3 hotels: name + area + approx ₹/night
+- Top 3 restaurants: cuisine + must-try dish
 
-            💡 **Travel Tips**
-            - 3–5 short, sharp tips on transport, safety, language, or culture.
-            (Use bullet points, short lines only.)
+💡 **Travel Tips**
+- Give exactly 5 bullet points only.
 
-            # Format cleanly in Markdown, readable for Streamlit.
-            """
+---
+Do **not** add any explanation, notes, or text after the Travel Tips section.
+Do **not** mention Streamlit or anything unrelated to travel.
+Respond in clean Markdown only.
+**End your response after the Travel Tips section.**
+"""
             result = chunked_generate(prompt_text=prompt)
 
-        # -------------------- DISPLAY SECTIONS --------------------
+        # -------------------- DISPLAY OUTPUT --------------------
         st.success(f"✅ Travel Plan for {city}, {country} Ready!")
         st.markdown('<div class="section-box">', unsafe_allow_html=True)
         st.markdown(result)
@@ -171,31 +172,43 @@ if st.button("🌸 Generate My AI Travel Plan"):
 
         # -------------------- MAP VIEW --------------------
         st.markdown('<div class="section-box"><h3>📍 Map View of Destination</h3>', unsafe_allow_html=True)
+
         try:
             df = pd.read_csv("worldcities.csv")
+
             if {'city', 'lat', 'lng'}.issubset(df.columns):
                 city_data = df[df['city'].str.lower() == city.lower()]
+
                 if not city_data.empty:
-                    lat, lon = float(city_data.iloc[0]['lat']), float(city_data.iloc[0]['lng'])
+                    lat = float(city_data.iloc[0]['lat'])
+                    lon = float(city_data.iloc[0]['lng'])
                     city_df = pd.DataFrame([{'lat': lat, 'lon': lon, 'city': city}])
 
                     st.pydeck_chart(pdk.Deck(
-                        map_style="mapbox://styles/mapbox/satellite-streets-v12",
                         initial_view_state=pdk.ViewState(
                             latitude=lat,
                             longitude=lon,
-                            zoom=4,
-                            pitch=45
+                            zoom=10,
+                            pitch=0
                         ),
                         layers=[
+                            # ✅ OpenStreetMap (No token required)
+                            pdk.Layer(
+                                "TileLayer",
+                                data=None,
+                                get_tile_url="https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                                tile_size=256
+                            ),
+                            # ✅ City Marker
                             pdk.Layer(
                                 "ScatterplotLayer",
                                 data=city_df,
                                 get_position='[lon, lat]',
-                                get_color='[255, 75, 150, 240]',
-                                get_radius=30000,
+                                get_color='[255, 75, 150, 200]',
+                                get_radius=3000,
                                 pickable=True
                             ),
+                            # ✅ City Name Label
                             pdk.Layer(
                                 "TextLayer",
                                 data=city_df,
@@ -208,14 +221,18 @@ if st.button("🌸 Generate My AI Travel Plan"):
                         ],
                         tooltip={"text": f"📍 {city}, {country}\nLat: {lat:.2f}, Lon: {lon:.2f}"}
                     ))
-                    st.success(f"🗺️ Showing {city}, {country} on world map!")
+
+                    st.success(f"🗺️ Showing {city}, {country} on the map!")
                 else:
                     st.warning(f"⚠️ City '{city}' not found in worldcities.csv.")
             else:
                 st.error("CSV file must include columns: city, lat, lng.")
+
         except Exception as e:
             st.error(f"⚠️ Error showing map: {e}")
+
         st.markdown('</div>', unsafe_allow_html=True)
+
 
         # -------------------- DOWNLOAD PDF --------------------
         st.markdown('<div class="section-box"><h3>📄 Download Trip Plan</h3>', unsafe_allow_html=True)
@@ -230,5 +247,6 @@ if st.button("🌸 Generate My AI Travel Plan"):
 
 # -------------------- FOOTER --------------------
 st.markdown("<hr><center>💜 AI Journey Planner |✨</center>", unsafe_allow_html=True)
+
 
 
