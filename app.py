@@ -152,12 +152,6 @@ For each day, include:
 """
             result = chunked_generate(prompt_text=prompt)
 
-        # -------------------- DISPLAY OUTPUT --------------------
-        st.success(f"✅ Travel Plan for {city}, {country} Ready!")
-        st.markdown('<div class="section-box">', unsafe_allow_html=True)
-        st.markdown(result)   # ✅ fast normal output
-        st.markdown('</div>', unsafe_allow_html=True)
-
 
      # -------------------- DISPLAY OUTPUT --------------------
 st.success(f"✅ Travel Plan for {city}, {country} Ready!")
@@ -243,6 +237,7 @@ st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------- FOOTER --------------------
 st.markdown("<hr><center>💜 AI Journey Planner |✨</center>", unsafe_allow_html=True)
+
 
 
 
