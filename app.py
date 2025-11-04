@@ -110,15 +110,6 @@ def create_pdf(text):
         pdf.multi_cell(0, 8, safe_line)
     return BytesIO(pdf.output(dest="S").encode("latin-1"))
 
-# ✅ -------------------- SMOOTH TYPING FUNCTION --------------------
-def stream_output(text):
-    placeholder = st.empty()
-    displayed = ""
-    for char in text:
-        displayed += char
-        placeholder.markdown(displayed)
-        time.sleep(0.002)
-
 # -------------------- INPUT SECTION --------------------
 st.markdown("<div class='section-box'><h2>📝 Plan Your Trip</h2>", unsafe_allow_html=True)
 country = st.text_input("🌍 Country", value="India")
@@ -145,10 +136,12 @@ Generate a detailed {days}-day travel itinerary for {city}, {country}, starting 
 🗺️ Trip Summary: 4–5 line vibe description.
 
 📅 Day-wise Itinerary:
-- Morning main visit + small highlight
-- Afternoon sightseeing/shopping + distance
-- Evening relaxation/food/sunset plan
-- End each day with 1 small helpful tip.
+For each day, include:
+
+- **Morning:** Start time + place + what to do + small highlight
+- **Afternoon:** Next attraction / market / activity + include approx travel time or distance
+- **Evening:** Sunset spot / café / dinner / chill activity suggestion
+- **Food Suggestions:** Mention 1 breakfast place, 1 lunch spot, 1 dinner spot (name only, no long description)
 
 💰 Budget: total within ₹{int(budget * 83)}, per day ~₹{round((budget * 83) / days)}
 
@@ -159,11 +152,18 @@ Generate a detailed {days}-day travel itinerary for {city}, {country}, starting 
 """
             result = chunked_generate(prompt_text=prompt)
 
-        # ✅ SMOOTH TYPING OUTPUT
+        # -------------------- DISPLAY OUTPUT --------------------
         st.success(f"✅ Travel Plan for {city}, {country} Ready!")
         st.markdown('<div class="section-box">', unsafe_allow_html=True)
-        stream_output(result)
+        st.markdown(result)   # ✅ fast normal output
         st.markdown('</div>', unsafe_allow_html=True)
+
+
+     # -------------------- DISPLAY OUTPUT --------------------
+st.success(f"✅ Travel Plan for {city}, {country} Ready!")
+st.markdown('<div class="section-box">', unsafe_allow_html=True)
+st.markdown(result)   # ✅ back to normal, fast output
+st.markdown('</div>', unsafe_allow_html=True)
 
 
         # -------------------- MAP VIEW --------------------
