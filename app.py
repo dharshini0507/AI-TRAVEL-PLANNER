@@ -110,6 +110,15 @@ def create_pdf(text):
         pdf.multi_cell(0, 8, safe_line)
     return BytesIO(pdf.output(dest="S").encode("latin-1"))
 
+# ✅ -------------------- SMOOTH TYPING FUNCTION --------------------
+def stream_output(text):
+    placeholder = st.empty()
+    displayed = ""
+    for char in text:
+        displayed += char
+        placeholder.markdown(displayed)
+        time.sleep(0.002)
+
 # -------------------- INPUT SECTION --------------------
 st.markdown("<div class='section-box'><h2>📝 Plan Your Trip</h2>", unsafe_allow_html=True)
 country = st.text_input("🌍 Country", value="India")
@@ -119,6 +128,7 @@ budget = st.number_input("💰 Budget (USD)", 100, 20000, 1500)
 travel_date = st.date_input("📅 Start Date", date.today())
 interests = st.multiselect("🎯 Interests", ["Nature", "Adventure", "Food", "Culture", "Beaches", "History", "Shopping"])
 st.markdown('</div>', unsafe_allow_html=True)
+
 # -------------------- MAIN ACTION --------------------
 if st.button("🌸 Generate My AI Travel Plan"):
     if not country or not city or not interests:
@@ -132,34 +142,20 @@ Generate a detailed {days}-day travel itinerary for {city}, {country}, starting 
 ✈️ Focus on: {', '.join(interests)}.
 🪔 Currency: Indian Rupees (₹).
 
-Include these sections clearly:
+🗺️ Trip Summary: 4–5 line vibe description.
 
-🗺️ **Trip Summary**
-- 4–5 line overview describing the travel theme, vibe, and highlights.
+📅 Day-wise Itinerary:
+- Morning main visit + small highlight
+- Afternoon sightseeing/shopping + distance
+- Evening relaxation/food/sunset plan
+- End each day with 1 small helpful tip.
 
-📅 **Day-wise Itinerary**
-For each day, provide:
-  - **Start Time**, **Place Name**, and **Activity Description**
-  - Morning: main attractions and experiences
-  - Afternoon: sightseeing, culture, or shopping
-  - Evening: food, events, or nightlife
-  - Mention approx distance/travel time and end with 1 short tip per day.
+💰 Budget: total within ₹{int(budget * 83)}, per day ~₹{round((budget * 83) / days)}
 
-💰 **Budget Breakdown (in ₹)**
-- Total cost within ₹{int(budget * 83)}
-- Per-day estimate (₹{round((budget * 83) / days)})
-- Key spending categories: Stay, Food, Travel.
+🏨 Hotels: 3 best stays (name + location + approx ₹/night)
+🍽️ Restaurants: 3 best local food spots (name + cuisine + must try dish)
 
-🏨 **Hotels & Restaurants**
-- Top 3 hotels: name + area + approx ₹/night
-- Top 3 restaurants: cuisine + must-try dish
-
-💡 **Travel Tips**
-- Give exactly 5 bullet points only.
-
----
-Do NOT add extra explanation or mention Streamlit.
-End your response after the Travel Tips section.
+💡 Travel Tips: exactly 5 bullet points
 """
             result = chunked_generate(prompt_text=prompt)
 
@@ -168,6 +164,7 @@ End your response after the Travel Tips section.
         st.markdown('<div class="section-box">', unsafe_allow_html=True)
         stream_output(result)
         st.markdown('</div>', unsafe_allow_html=True)
+
 
         # -------------------- MAP VIEW --------------------
         st.markdown('<div class="section-box"><h3>📍 Map View of Destination</h3>', unsafe_allow_html=True)
@@ -246,6 +243,7 @@ End your response after the Travel Tips section.
 
 # -------------------- FOOTER --------------------
 st.markdown("<hr><center>💜 AI Journey Planner |✨</center>", unsafe_allow_html=True)
+
 
 
 
