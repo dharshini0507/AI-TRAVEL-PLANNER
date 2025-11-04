@@ -81,24 +81,14 @@ if not API_KEY:
 
 genai.configure(api_key=API_KEY)
 
-# -------------------- CHUNKED GENERATE FUNCTION --------------------
-def chunked_generate(prompt_text, model_name="models/gemini-2.5-flash", chunk_size=1500):
-    """Generate long text safely in chunks using Gemini 2.5 Flash."""
+# -------------------- FAST GENERATE FUNCTION --------------------
+def generate_fast(prompt_text, model_name="models/gemini-2.5-flash"):
     try:
         model = genai.GenerativeModel(model_name)
+        response = model.generate_content(prompt_text)
+        return response.text
     except Exception as e:
-        return f"[❌ Model initialization failed: {e}]"
-
-    chunks = textwrap.wrap(prompt_text, chunk_size)
-    results = []
-    for c in chunks:
-        try:
-            response = model.generate_content(c)
-            if hasattr(response, "text"):
-                results.append(response.text)
-        except Exception as e:
-            results.append(f"[⚠️ Error generating chunk: {e}]")
-    return "\n".join(results)
+        return f"[❌ Error: {e}]"
 
 # -------------------- PDF FUNCTION --------------------
 def create_pdf(text):
@@ -150,7 +140,7 @@ For each day, include:
 
 💡 Travel Tips: exactly 5 bullet points
 """
-            result = chunked_generate(prompt_text=prompt)
+           result = generate_fast(prompt)
 
 # -------------------- DISPLAY OUTPUT --------------------
         st.success(f"✅ Travel Plan for {city}, {country} Ready!")
@@ -232,6 +222,7 @@ For each day, include:
 
 # -------------------- FOOTER --------------------
 st.markdown("<hr><center>💜 AI Journey Planner |✨</center>", unsafe_allow_html=True)
+
 
 
 
