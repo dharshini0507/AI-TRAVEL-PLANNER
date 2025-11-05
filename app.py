@@ -145,60 +145,55 @@ For each day, include:
 # -------------------- DISPLAY OUTPUT --------------------
         st.success(f"✅ Travel Plan for {city}, {country} Ready!")
         st.markdown('<div class="section-box">', unsafe_allow_html=True)
-        st.markdown(result)   # ✅ fast normal output
+        st.markdown(result)
         st.markdown('</div>', unsafe_allow_html=True)
 
-# -------------------- MAP VIEW --------------------
-st.markdown('<div class="section-box"><h3>📍 Map View of Destination</h3>', unsafe_allow_html=True)
+        # -------------------- MAP VIEW --------------------
+        st.markdown('<div class="section-box"><h3>📍 Map View of Destination</h3>', unsafe_allow_html=True)
 
-try:
-    df = pd.read_csv("worldcities.csv")
+        try:
+            df = pd.read_csv("worldcities.csv")
 
-    # ✅ Normalize all city names to lowercase
-    df['city'] = df['city'].str.lower().str.strip()
+            # ✅ Normalize CSV city names
+            df['city'] = df['city'].str.lower().str.strip()
+            city_cleaned = city.lower().strip()
 
-    # ✅ Normalize input city
-    city_cleaned = city.lower().strip()
+            # Fallback values
+            fallback_coords = {
+                "udupi": (13.3409, 74.7421),
+                "manipal": (13.3419, 74.7558),
+                "malpe": (13.3615, 74.7033)
+            }
 
-    # Fallback coordinates
-    fallback_coords = {
-        "udupi": (13.3409, 74.7421),
-        "manipal": (13.3419, 74.7558),
-        "malpe": (13.3615, 74.7033)
-    }
+            # Match city
+            city_data = df[df['city'] == city_cleaned]
 
-    # ✅ Case-insensitive city match
-    city_data = df[df['city'] == city_cleaned]
+            if not city_data.empty:
+                lat = city_data.iloc[0]['lat']
+                lon = city_data.iloc[0]['lng']
+                st.success(f"✅ {city.title()} found: {lat}, {lon}")
+            else:
+                if city_cleaned in fallback_coords:
+                    lat, lon = fallback_coords[city_cleaned]
+                    st.info(f"ℹ️ Using fallback coordinates for {city.title()}.")
+                else:
+                    lat, lon = (20.5937, 78.9629)
+                    st.warning("⚠️ City not in CSV. Showing India map.")
 
-    if not city_data.empty:
-        lat = city_data.iloc[0]['lat']
-        lon = city_data.iloc[0]['lng']
-        st.success(f"✅ {city.title()} found: {lat}, {lon}")
-    else:
-        if city_cleaned in fallback_coords:
-            lat, lon = fallback_coords[city_cleaned]
-            st.info(f"ℹ️ Using fallback coordinates for {city.title()}.")
-        else:
-            lat, lon = (20.5937, 78.9629)
-            st.warning("⚠️ City not in CSV. Showing India map.")
+            city_df = pd.DataFrame([{'lat': lat, 'lon': lon, 'city': city.title()}])
 
-    # Map display
-    city_df = pd.DataFrame([{'lat': lat, 'lon': lon, 'city': city.title()}])
+            st.pydeck_chart(pdk.Deck(
+                initial_view_state=pdk.ViewState(latitude=lat, longitude=lon, zoom=10),
+                layers=[
+                    pdk.Layer("ScatterplotLayer", city_df, get_position='[lon, lat]', get_radius=4000),
+                    pdk.Layer("TextLayer", city_df, get_position='[lon, lat]', get_text='city', get_size=24)
+                ]
+            ))
 
-    st.pydeck_chart(pdk.Deck(
-        initial_view_state=pdk.ViewState(latitude=lat, longitude=lon, zoom=10),
-        layers=[
-            pdk.Layer("ScatterplotLayer", city_df, get_position='[lon, lat]', get_radius=4000),
-            pdk.Layer("TextLayer", city_df, get_position='[lon, lat]', get_text='city', get_size=24)
-        ]
-    ))
+        except Exception as e:
+            st.error(f"⚠️ Map Error: {e}")
 
-except Exception as e:
-    st.error(f"⚠️ Map Error: {e}")
-
-st.markdown('</div>', unsafe_allow_html=True)
-
-
+        st.markdown('</div>', unsafe_allow_html=True)
 
         # -------------------- DOWNLOAD PDF --------------------
         st.markdown('<div class="section-box"><h3>📄 Download Trip Plan</h3>', unsafe_allow_html=True)
@@ -213,6 +208,7 @@ st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------- FOOTER --------------------
 st.markdown("<hr><center>💜 AI Journey Planner |✨</center>", unsafe_allow_html=True)
+
 
 
 
