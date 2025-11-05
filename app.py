@@ -148,65 +148,56 @@ For each day, include:
         st.markdown(result)   # ✅ fast normal output
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # -------------------- MAP VIEW --------------------
-        st.markdown('<div class="section-box"><h3>📍 Map View of Destination</h3>', unsafe_allow_html=True)
+# -------------------- MAP VIEW --------------------
+st.markdown('<div class="section-box"><h3>📍 Map View of Destination</h3>', unsafe_allow_html=True)
 
-        try:
-            df = pd.read_csv("worldcities.csv")
+try:
+    df = pd.read_csv("worldcities.csv")
 
-            if {'city', 'lat', 'lng'}.issubset(df.columns):
-                city_data = df[df['city'].str.lower() == city.lower()]
+    # ✅ Normalize all city names to lowercase
+    df['city'] = df['city'].str.lower().str.strip()
 
-                if not city_data.empty:
-                    lat = float(city_data.iloc[0]['lat'])
-                    lon = float(city_data.iloc[0]['lng'])
-                    city_df = pd.DataFrame([{'lat': lat, 'lon': lon, 'city': city}])
+    # ✅ Normalize input city
+    city_cleaned = city.lower().strip()
 
-                    st.pydeck_chart(pdk.Deck(
-                        initial_view_state=pdk.ViewState(
-                            latitude=lat,
-                            longitude=lon,
-                            zoom=10,
-                            pitch=0
-                        ),
-                        layers=[
-                            pdk.Layer(
-                                "TileLayer",
-                                data=None,
-                                get_tile_url="https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                                tile_size=256
-                            ),
-                            pdk.Layer(
-                                "ScatterplotLayer",
-                                data=city_df,
-                                get_position='[lon, lat]',
-                                get_color='[255, 75, 150, 200]',
-                                get_radius=3000,
-                                pickable=True
-                            ),
-                            pdk.Layer(
-                                "TextLayer",
-                                data=city_df,
-                                get_position='[lon, lat]',
-                                get_text='city',
-                                get_color='[255, 255, 255, 255]',
-                                get_size=24,
-                                get_alignment_baseline='"bottom"'
-                            )
-                        ],
-                        tooltip={"text": f"📍 {city}, {country}\nLat: {lat:.2f}, Lon: {lon:.2f}"}
-                    ))
+    # Fallback coordinates
+    fallback_coords = {
+        "udupi": (13.3409, 74.7421),
+        "manipal": (13.3419, 74.7558),
+        "malpe": (13.3615, 74.7033)
+    }
 
-                    st.success(f"🗺️ Showing {city}, {country} on the map!")
-                else:
-                    st.warning(f"⚠️ City '{city}' not found in worldcities.csv.")
-            else:
-                st.error("CSV file must include columns: city, lat, lng.")
+    # ✅ Case-insensitive city match
+    city_data = df[df['city'] == city_cleaned]
 
-        except Exception as e:
-            st.error(f"⚠️ Error showing map: {e}")
+    if not city_data.empty:
+        lat = city_data.iloc[0]['lat']
+        lon = city_data.iloc[0]['lng']
+        st.success(f"✅ {city.title()} found: {lat}, {lon}")
+    else:
+        if city_cleaned in fallback_coords:
+            lat, lon = fallback_coords[city_cleaned]
+            st.info(f"ℹ️ Using fallback coordinates for {city.title()}.")
+        else:
+            lat, lon = (20.5937, 78.9629)
+            st.warning("⚠️ City not in CSV. Showing India map.")
 
-        st.markdown('</div>', unsafe_allow_html=True)
+    # Map display
+    city_df = pd.DataFrame([{'lat': lat, 'lon': lon, 'city': city.title()}])
+
+    st.pydeck_chart(pdk.Deck(
+        initial_view_state=pdk.ViewState(latitude=lat, longitude=lon, zoom=10),
+        layers=[
+            pdk.Layer("ScatterplotLayer", city_df, get_position='[lon, lat]', get_radius=4000),
+            pdk.Layer("TextLayer", city_df, get_position='[lon, lat]', get_text='city', get_size=24)
+        ]
+    ))
+
+except Exception as e:
+    st.error(f"⚠️ Map Error: {e}")
+
+st.markdown('</div>', unsafe_allow_html=True)
+
 
 
         # -------------------- DOWNLOAD PDF --------------------
@@ -222,6 +213,7 @@ For each day, include:
 
 # -------------------- FOOTER --------------------
 st.markdown("<hr><center>💜 AI Journey Planner |✨</center>", unsafe_allow_html=True)
+
 
 
 
