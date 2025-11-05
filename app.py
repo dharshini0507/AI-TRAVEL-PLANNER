@@ -185,8 +185,22 @@ For each day, include:
             st.pydeck_chart(pdk.Deck(
                 initial_view_state=pdk.ViewState(latitude=lat, longitude=lon, zoom=10),
                 layers=[
-                    pdk.Layer("ScatterplotLayer", city_df, get_position='[lon, lat]', get_radius=4000),
-                    pdk.Layer("TextLayer", city_df, get_position='[lon, lat]', get_text='city', get_size=24)
+                    pdk.Layer(
+                        "ScatterplotLayer",
+                        city_df,
+                        get_position='[lon, lat]',
+                        get_radius=4000,
+                        get_color='[255, 75, 150, 200]'
+                    ),
+                    pdk.Layer(
+                        "TextLayer",
+                        city_df,
+                        get_position='[lon, lat]',
+                        get_text='city',
+                        get_size=24,
+                        get_color='[255, 255, 255, 255]',   # ✅ White text color
+                        get_alignment_baseline='"bottom"'
+                    )
                 ]
             ))
 
@@ -208,6 +222,7 @@ For each day, include:
 
 # -------------------- FOOTER --------------------
 st.markdown("<hr><center>💜 AI Journey Planner |✨</center>", unsafe_allow_html=True)
+
 
 
 
