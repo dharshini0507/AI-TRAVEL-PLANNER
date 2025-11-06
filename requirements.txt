@@ -1,4 +1,6 @@
 streamlit
 google-generativeai
 fpdf
+pandas
 pydeck
+psycopg2-binary
