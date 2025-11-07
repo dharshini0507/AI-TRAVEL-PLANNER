@@ -1,4 +1,4 @@
-# app.py  —  AI Travel Planner (Supabase PostgreSQL + psycopg2)
+# app.py — AI Travel Planner (SQLite version: simple & stable)
 
 import streamlit as st
 import google.generativeai as genai
@@ -7,16 +7,16 @@ from io import BytesIO
 from datetime import date, datetime
 import pydeck as pdk
 import pandas as pd
+import sqlite3
 import hashlib
 import json
-import psycopg2
-import psycopg2.extras
+import os
 
 # -------------------- CONFIG --------------------
 st.set_page_config(page_title="AI Travel Planner", page_icon="✈️", layout="wide")
-
 TITLE = "AI TRAVEL PLANNER"
 TAGLINE = "Plan smarter • Travel better • Powered by AI 💜"
+DB_PATH = "travel_app.db"  # stored with the app
 
 # -------------------- STYLES --------------------
 st.markdown("""
@@ -53,117 +53,99 @@ div.stButton>button:hover{ transform:scale(1.04); box-shadow:0 0 30px rgba(190,1
 </style>
 """, unsafe_allow_html=True)
 
-# -------------------- API KEY --------------------
+# -------------------- API KEY (no prompt; secrets only) --------------------
 try:
     API_KEY = st.secrets["general"]["GOOGLE_API_KEY"]
 except Exception:
     st.error("🚫 Google API key missing. Add it in Secrets under [general] GOOGLE_API_KEY.")
     st.stop()
-
 genai.configure(api_key=API_KEY)
 
-# -------------------- DB (Supabase PostgreSQL via psycopg2) --------------------
+# -------------------- DB (SQLite) --------------------
 def get_conn():
-    try:
-        dsn = st.secrets["db"]["SUPABASE_URL"]
-    except Exception:
-        st.error("🚫 Database URL missing. Add it in Secrets under [db] SUPABASE_URL.")
-        st.stop()
-    # psycopg2 accepts DSN string; enforce SSL
-    return psycopg2.connect(dsn, sslmode="require")
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    return conn
 
 def init_db():
     with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                create table if not exists users(
-                    id bigserial primary key,
-                    name text,
-                    email text unique,
-                    password_hash text
-                );
-            """)
-            cur.execute("""
-                create table if not exists trips(
-                    id bigserial primary key,
-                    user_id bigint references users(id) on delete cascade,
-                    country text,
-                    city text,
-                    days integer,
-                    budget_usd integer,
-                    travel_date text,
-                    interests text,
-                    result_text text,
-                    created_at timestamp default now()
-                );
-            """)
-            # seed demo user if not exists
-            cur.execute("select id from users where email=%s", ("demo@example.com",))
-            if not cur.fetchone():
-                cur.execute(
-                    "insert into users(name,email,password_hash) values(%s,%s,%s)",
-                    ("Demo User","demo@example.com", hashlib.sha256("demo123".encode()).hexdigest())
-                )
+        c = conn.cursor()
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS users(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT,
+                email TEXT UNIQUE,
+                password_hash TEXT
+            )
+        """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS trips(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                country TEXT,
+                city TEXT,
+                days INTEGER,
+                budget_usd INTEGER,
+                travel_date TEXT,
+                interests TEXT,
+                result_text TEXT,
+                created_at TEXT,
+                FOREIGN KEY(user_id) REFERENCES users(id)
+            )
+        """)
+        # seed demo user
+        c.execute("SELECT id FROM users WHERE email=?", ("demo@example.com",))
+        if not c.fetchone():
+            c.execute(
+                "INSERT INTO users(name,email,password_hash) VALUES(?,?,?)",
+                ("Demo User","demo@example.com", hashlib.sha256("demo123".encode()).hexdigest())
+            )
         conn.commit()
 
-def hash_pw(pw: str) -> str:
-    return hashlib.sha256(pw.encode("utf-8")).hexdigest()
+def hash_pw(pw:str)->str: return hashlib.sha256(pw.encode()).hexdigest()
 
 def signup_user(name, email, password):
     try:
         with get_conn() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "insert into users(name,email,password_hash) values(%s,%s,%s)",
-                    (name, email, hash_pw(password))
-                )
+            c=conn.cursor()
+            c.execute("INSERT INTO users(name,email,password_hash) VALUES(?,?,?)",
+                      (name, email, hash_pw(password)))
+            conn.commit()
         return True, "Account created! Please log in."
-    except psycopg2.Error as e:
-        if getattr(e, "pgcode", ""):
-            return False, "Email already registered or DB error."
-        return False, "Could not create account."
+    except sqlite3.IntegrityError:
+        return False, "Email already registered."
 
 def login_user(email, password):
     with get_conn() as conn:
-        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
-            cur.execute("select id,name,password_hash from users where email=%s", (email,))
-            row = cur.fetchone()
-            if row and row["password_hash"] == hash_pw(password):
-                return {"id": row["id"], "email": email, "name": row["name"] or ""}
+        c=conn.cursor()
+        c.execute("SELECT id,name,password_hash FROM users WHERE email=?", (email,))
+        r=c.fetchone()
+        if r and r[2]==hash_pw(password):
+            return {"id":r[0], "email":email, "name":r[1] or ""}
     return None
 
 def save_trip(user_id, inputs, result_text):
     with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """insert into trips (user_id,country,city,days,budget_usd,travel_date,interests,result_text)
-                   values (%s,%s,%s,%s,%s,%s,%s,%s) returning id""",
-                (user_id, inputs["country"], inputs["city"], inputs["days"], inputs["budget"],
-                 inputs["travel_date"], json.dumps(inputs["interests"]), result_text)
-            )
-            new_id = cur.fetchone()[0]
+        c=conn.cursor()
+        c.execute("""INSERT INTO trips(user_id,country,city,days,budget_usd,travel_date,interests,result_text,created_at)
+                     VALUES(?,?,?,?,?,?,?,?,?)""",
+                  (user_id, inputs["country"], inputs["city"], inputs["days"], inputs["budget"],
+                   inputs["travel_date"], json.dumps(inputs["interests"]), result_text, datetime.utcnow().isoformat()))
         conn.commit()
-        return new_id
+        return c.lastrowid
 
 def load_trips(user_id):
     with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """select id,country,city,days,budget_usd,travel_date,interests,created_at
-                   from trips where user_id=%s order by id desc""",
-                (user_id,)
-            )
-            return cur.fetchall()
+        c=conn.cursor()
+        c.execute("""SELECT id,country,city,days,budget_usd,travel_date,interests,created_at
+                     FROM trips WHERE user_id=? ORDER BY id DESC""", (user_id,))
+        return c.fetchall()
 
 def load_trip_detail(trip_id, user_id):
     with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """select id,country,city,days,budget_usd,travel_date,interests,result_text,created_at
-                   from trips where id=%s and user_id=%s""",
-                (trip_id, user_id)
-            )
-            return cur.fetchone()
+        c=conn.cursor()
+        c.execute("""SELECT id,country,city,days,budget_usd,travel_date,interests,result_text,created_at
+                     FROM trips WHERE id=? AND user_id=?""", (trip_id, user_id))
+        return c.fetchone()
 
 init_db()
 
@@ -239,7 +221,6 @@ def app_main():
         else:
             rows = []
             for r in trips:
-                # id,country,city,days,budget,travel_date,interests,created_at
                 rows.append({
                     "Trip ID": r[0], "Country": r[1], "City": r[2], "Days": r[3],
                     "Budget (USD)": r[4], "Start Date": r[5],
@@ -277,7 +258,7 @@ def app_main():
 
     result = st.session_state.get("last_result", "")
 
-    # Generate (PROMPT KEPT EXACTLY AS YOU WROTE)
+    # --------- PROMPT (kept EXACTLY as requested) ---------
     if st.button("🌸 Generate My AI Travel Plan"):
         if not country or not city or not interests:
             st.error("⚠️ Please fill all fields.")
