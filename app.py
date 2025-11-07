@@ -177,11 +177,12 @@ def auth_screen():
 
     tab_login, tab_signup = st.tabs(["🔐 Login", "🆕 Sign Up"])
 
+    # LOGIN TAB (unique keys)
     with tab_login:
         st.markdown("<div class='glass-box'>", unsafe_allow_html=True)
-        email = st.text_input("Email")
-        password = st.text_input("Password", type="password")
-        if st.button("✨ Login", use_container_width=True):
+        email = st.text_input("Email", key="login_email")
+        password = st.text_input("Password", type="password", key="login_pw")
+        if st.button("✨ Login", use_container_width=True, key="login_btn"):
             user = login_user(email, password)
             if user:
                 st.session_state.user = user
@@ -192,13 +193,14 @@ def auth_screen():
         st.caption("Try demo: demo@example.com / demo123")
         st.markdown("</div>", unsafe_allow_html=True)
 
+    # SIGNUP TAB (unique keys)
     with tab_signup:
         st.markdown("<div class='glass-box'>", unsafe_allow_html=True)
-        name_su = st.text_input("Full Name")
-        email_su = st.text_input("Email")
-        pw_su = st.text_input("Password", type="password")
-        pw2_su = st.text_input("Confirm Password", type="password")
-        if st.button("🌟 Create Account", use_container_width=True):
+        name_su = st.text_input("Full Name", key="signup_name")
+        email_su = st.text_input("Email", key="signup_email")
+        pw_su = st.text_input("Password", type="password", key="signup_pw")
+        pw2_su = st.text_input("Confirm Password", type="password", key="signup_pw2")
+        if st.button("🌟 Create Account", use_container_width=True, key="signup_btn"):
             if not email_su or not pw_su:
                 st.error("Please fill all fields.")
             elif pw_su != pw2_su:
@@ -228,8 +230,8 @@ def app_main():
                     "Created": str(r[7])[:19]
                 })
             st.dataframe(pd.DataFrame(rows), use_container_width=True)
-            selected_id = st.number_input("Enter Trip ID to open", min_value=0, step=1, value=0)
-            if st.button("Open Saved Trip"):
+            selected_id = st.number_input("Enter Trip ID to open", min_value=0, step=1, value=0, key="open_trip_id")
+            if st.button("Open Saved Trip", key="open_trip_btn"):
                 if selected_id:
                     d = load_trip_detail(selected_id, user["id"])
                     if d:
@@ -241,25 +243,26 @@ def app_main():
                                 "📄 Download Full Trip Plan (PDF)",
                                 data=create_pdf(result_text or ""),
                                 file_name=f"{city}_AI_TravelPlan.pdf",
-                                mime="application/pdf"
+                                mime="application/pdf",
+                                key=f"dl_saved_{selected_id}"
                             )
                     else:
                         st.error("Trip not found or not yours.")
 
     # Inputs
     st.markdown("<div class='section-box'><h3>📝 Plan Your Trip</h3>", unsafe_allow_html=True)
-    country = st.text_input("🌍 Country", value="India")
-    city = st.text_input("🏙️ City", value="Goa")
-    days = st.number_input("🗓️ Number of Days", 1, 15, 5)
-    budget = st.number_input("💰 Budget (USD)", 100, 20000, 1500)
-    travel_date = st.date_input("📅 Start Date", date.today())
-    interests = st.multiselect("🎯 Interests", ["Nature", "Adventure", "Food", "Culture", "Beaches", "History", "Shopping"])
+    country = st.text_input("🌍 Country", value="India", key="in_country")
+    city = st.text_input("🏙️ City", value="Goa", key="in_city")
+    days = st.number_input("🗓️ Number of Days", 1, 15, 5, key="in_days")
+    budget = st.number_input("💰 Budget (USD)", 100, 20000, 1500, key="in_budget")
+    travel_date = st.date_input("📅 Start Date", date.today(), key="in_date")
+    interests = st.multiselect("🎯 Interests", ["Nature", "Adventure", "Food", "Culture", "Beaches", "History", "Shopping"], key="in_interests")
     st.markdown("</div>", unsafe_allow_html=True)
 
     result = st.session_state.get("last_result", "")
 
     # --------- PROMPT (kept EXACTLY as requested) ---------
-    if st.button("🌸 Generate My AI Travel Plan"):
+    if st.button("🌸 Generate My AI Travel Plan", key="gen_btn"):
         if not country or not city or not interests:
             st.error("⚠️ Please fill all fields.")
         else:
@@ -306,7 +309,7 @@ For each day, include:
 
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("💾 Save Plan"):
+            if st.button("💾 Save Plan", key="save_btn"):
                 tid = save_trip(st.session_state.user["id"], li, result)
                 st.success(f"Saved! Trip ID: {tid}")
         with col2:
@@ -314,7 +317,8 @@ For each day, include:
                 "📄 Download Full Trip Plan (PDF)",
                 data=create_pdf(result),
                 file_name=f"{li['city']}_AI_TravelPlan.pdf",
-                mime="application/pdf"
+                mime="application/pdf",
+                key="dl_current"
             )
 
         # Map
@@ -377,7 +381,7 @@ For each day, include:
     c1,c2 = st.columns([3,1])
     with c1: st.markdown(f"<div class='muted'>💜 {TITLE} | {TAGLINE}</div>", unsafe_allow_html=True)
     with c2:
-        if st.button("🚪 Logout"):
+        if st.button("🚪 Logout", key="logout_btn"):
             st.session_state.user=None
             st.experimental_rerun()
 
