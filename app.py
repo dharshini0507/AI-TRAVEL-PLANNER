@@ -187,7 +187,7 @@ def auth_screen():
             if user:
                 st.session_state.user = user
                 st.success("Logged in! Loading planner…")
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Invalid email or password.")
         st.caption("Try demo: demo@example.com / demo123")
@@ -383,7 +383,7 @@ For each day, include:
     with c2:
         if st.button("🚪 Logout", key="logout_btn"):
             st.session_state.user=None
-            st.experimental_rerun()
+            st.rerun()
 
 # -------------------- ROUTER --------------------
 if st.session_state.user is None:
