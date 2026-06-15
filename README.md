@@ -4,7 +4,7 @@
 An intelligent travel planning web app built using Streamlit and Google Gemini AI.
 It helps users generate customized travel itineraries, summaries, and interactive maps for cities around the world — all in seconds! 🧳✨
 
-🚀 Features
+# Features
 
 ✅ AI-Powered Itinerary Generation – Creates detailed daily plans based on your travel preferences.
 ✅ Smart Trip Summary – Gives an estimated trip cost and highlights for your selected destination.
@@ -13,7 +13,7 @@ It helps users generate customized travel itineraries, summaries, and interactiv
 ✅ Global Coverage – Supports 100+ cities across India, Europe, Asia, America, Oceania & Africa.
 ✅ Beautiful UI – Designed with pastel gradients and smooth animations for a pleasant user experience.
 
-🧠 Tech Stack
+# Tech Stack
 Component	Technology
 Frontend/UI	Streamlit
 AI Model	Google Gemini (via google-generativeai)
